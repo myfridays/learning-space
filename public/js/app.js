@@ -8,6 +8,7 @@
 
 import { api } from './api.js';
 import { initCosmos } from './cosmos.js';
+import { initPet } from './pet.js';
 import { $, readStored, toast, writeStored } from './util.js';
 
 import { loginView } from './views/login.js';
@@ -308,4 +309,5 @@ document.addEventListener('keydown', (event) => {
 });
 
 initCosmos();
+initPet();
 boot();
