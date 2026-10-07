@@ -1253,3 +1253,59 @@ html[data-theme="dark"] .notice--info { color: var(--accent); }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* 星空主题：柔光玻璃面板，背景粒子独立于页面内容。 */
+:root {
+  --bg: #eaf0ff; --bg-soft: #e3e9fa;
+  --surface: rgba(255, 255, 255, .88); --surface-2: #edf0fc; --surface-3: #e0e5f7;
+  --border: #d5dbf1; --border-strong: #b3bedf;
+  --text: #242b4c; --text-2: #566187; --text-3: #6b7699;
+  --accent: #6554c0; --accent-ink: #4c399d; --accent-soft: #eae5ff; --accent-line: #b7a9ec;
+  --topbar: rgba(239, 243, 255, .86);
+  --h1: #e0dcf5; --h2: #bcb1e3; --h3: #9481ce; --h4: #6554c0;
+}
+html[data-theme="dark"] {
+  --bg: #080d24; --bg-soft: #101732;
+  --surface: rgba(20, 28, 57, .88); --surface-2: #1b2547; --surface-3: #253153;
+  --border: #303c61; --border-strong: #4f608f;
+  --text: #edf0ff; --text-2: #bbc5e5; --text-3: #92a2cc;
+  --accent: #b2a2ff; --accent-ink: #d7cfff; --accent-soft: rgba(170, 148, 255, .15);
+  --accent-line: rgba(170, 148, 255, .4); --topbar: rgba(10, 16, 38, .86);
+  --h1: #292d54; --h2: #4a4478; --h3: #7d69b9; --h4: #b2a2ff;
+  --shadow: 0 8px 32px -12px #0008; --shadow-lg: 0 20px 60px -20px #000b;
+}
+body {
+  background: radial-gradient(ellipse at 12% 8%, #9787ee24, transparent 48%),
+    radial-gradient(ellipse at 90% 75%, #4cbbdc20, transparent 50%), var(--bg);
+  min-height: 100vh;
+  isolation: isolate;
+}
+#cosmos { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+.card, .login { backdrop-filter: blur(12px); }
+.brand__mark { background: linear-gradient(140deg, #9c84e8, #54b8d8); }
+html[data-theme="dark"] .brand__mark { color: #fff; }
+.space-pet { position: fixed; width: 120px; height: 146px; z-index: 90; user-select: none; }
+.space-pet[hidden], .space-pet-restore[hidden] { display: none; }
+.space-pet__character { width: 120px; height: 140px; padding: 0; display: block; touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+.space-pet__character img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 5px 12px #8e80fa55); }
+.space-pet__character:focus-visible, .space-pet-restore:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 18px; }
+.space-pet.is-dragging .space-pet__character { cursor: grabbing; transform: rotate(-6deg); }
+.space-pet__bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: 136px; padding: 10px 12px; font-size: 12px; line-height: 1.6; color: var(--text); background: var(--surface); border: 1px solid var(--accent-line); border-radius: 16px 16px 5px 16px; box-shadow: var(--shadow); backdrop-filter: blur(16px); pointer-events: none; transition: opacity .2s; }
+.space-pet__bubble.is-below { bottom: auto; top: 100%; }
+.space-pet__bubble.is-quiet { opacity: 0; }
+.space-pet:focus-within .space-pet__bubble.is-quiet, .space-pet:hover .space-pet__bubble.is-quiet { opacity: 1; }
+.space-pet__tools { position: absolute; right: 0; top: 5px; }
+.space-pet__tools button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+.space-pet-restore { position: fixed; right: 18px; bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 90; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); font-size: 24px; box-shadow: var(--shadow); }
+.space-pet__character[data-effect="wave"] { animation: pet-wave .25s ease-in-out 4; }
+.space-pet__character[data-effect="bounce"] { animation: pet-bounce .4s ease-in-out 3; }
+.space-pet__character[data-effect="love"] { animation: pet-love .6s ease-in-out 2; }
+.space-pet__character[data-effect="spin"] { animation: pet-spin 1s ease-in-out; }
+@keyframes pet-wave { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@keyframes pet-bounce { 0%,100% { transform: translateY(0) scale(1.04,.96); } 50% { transform: translateY(-22px) scale(.97,1.03); } }
+@keyframes pet-love { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); filter: drop-shadow(0 0 12px #ff9ab6); } }
+@keyframes pet-spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .space-pet__character[data-effect] { animation: none; }
+  .space-pet__bubble { transition: none; }
+}

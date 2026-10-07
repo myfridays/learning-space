@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v2';
+const CACHE_NAME = 'learning-space-v3-cosmos';
 
 const STATIC_ASSETS = [
   '/',
@@ -22,6 +22,8 @@ const STATIC_ASSETS = [
   '/icon-maskable.svg',
   '/manifest.webmanifest',
   '/js/app.js',
+  '/js/cosmos.js',
+  '/pet.svg',
   '/js/api.js',
   '/js/util.js',
   '/js/components.js',

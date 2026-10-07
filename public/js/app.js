@@ -7,6 +7,7 @@
  */
 
 import { api } from './api.js';
+import { initCosmos } from './cosmos.js';
 import { $, readStored, toast, writeStored } from './util.js';
 
 import { loginView } from './views/login.js';
@@ -34,7 +35,7 @@ const MOON_ICON = `<path d="M20.5 14.3A8.4 8.4 0 0 1 9.7 3.5a8.4 8.4 0 1 0 10.8 
    ══════════════════════════════════════════════════════════ */
 
 const media = window.matchMedia('(prefers-color-scheme: dark)');
-let themeMode = readStored('theme-mode', 'auto');
+let themeMode = readStored('theme-mode', 'dark');
 
 function effectiveTheme() {
   if (themeMode === 'auto') return media.matches ? 'dark' : 'light';
@@ -52,7 +53,7 @@ function applyTheme() {
   if (icon) icon.innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
 
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'dark' ? '#12151a' : '#faf9f6');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#080d24' : '#eaf0ff');
 
   if (!themeListenerBound) {
     themeListenerBound = true;
@@ -259,6 +260,13 @@ async function renderRoute() {
 async function boot() {
   applyTheme();
 
+  // Bind before authentication so navigation also works immediately after login.
+  window.addEventListener('hashchange', () => {
+    if (!app.shellReady) return;
+    updateNav();
+    renderRoute();
+  });
+
   const root = $('#app');
 
   try {
@@ -271,10 +279,6 @@ async function boot() {
 
     await app.start();
 
-    window.addEventListener('hashchange', () => {
-      updateNav();
-      renderRoute();
-    });
   } catch (err) {
     console.error(err);
     root.innerHTML = `<div class="login-wrap"><div class="login">
@@ -303,4 +307,5 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+initCosmos();
 boot();
