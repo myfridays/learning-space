@@ -1,0 +1,81 @@
+{
+	// Cloudflare Workers 配置文件
+	// 文档: https://developers.cloudflare.com/workers/wrangler/configuration/
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "learning-space",
+	// Worker 入口（Cloudflare 会自动处理 TypeScript，无需构建步骤）
+	"main": "worker/index.ts",
+	// 建议改为你执行 `wrangler deploy` 当天的日期
+	"compatibility_date": "2026-10-06",
+	// 静态前端文件。
+	//
+	// ⚠️ not_found_handling 必须用 "none"，绝对不能用 "single-page-application"：
+	//    本项目前端用 hash 路由（#/notes），根本不需要 SPA 回退。
+	//    而 SPA 回退会把「找不到的 .js 文件」伪装成一个 HTTP 200 +
+	//    Content-Type: text/html 的 index.html。浏览器发现是 ES Module
+	//    却拿到 HTML，会直接拒绝执行 → 整页白屏，且极难排查。
+	//    改成 "none" 之后，缺文件就是干净的 404，问题一眼可见。
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS",
+		"not_found_handling": "none",
+		// /api/* 明确交给 Worker，其余请求完全不进 Worker，
+		// 不依赖 Sec-Fetch-Mode 请求头做启发式判断，行为更可预测
+		"run_worker_first": ["/api/*"]
+	},
+	// D1 数据库。执行 `wrangler d1 create learning-space` 后，
+	// 把输出的 database_id 填到下面引号里。
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "learning-space",
+			"database_id": "4e74b578-bfed-4cf9-930b-d5c97e338874"
+		}
+		// {
+		// 	"binding": "learning_space",
+		// 	"database_name": "learning-space",
+		// 	"database_id": "4e74b578-bfed-4cf9-930b-d5c97e338874",
+		// 	"remote": true
+		// }
+	],
+	// R2 存储桶，用来放 PDF 和文档。执行 `wrangler r2 bucket create learning-space-files`
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "learning-space-files"
+		}
+		// {
+		// 	"bucket_name": "learning-space-files",
+		// 	"binding": "learning_space_files",
+		// 	"remote": true
+		// }
+	],
+	"vars": {
+		// 文档存储总容量上限（字节）。8 GiB = 8589934592
+		"STORAGE_QUOTA_BYTES": "8589934592"
+	}
+
+	// ── 绑定自定义域名 ──────────────────────────────────────────
+	//
+	// 为什么需要：*.workers.dev 在国内可达性很差（社区反馈是被墙的）。
+	// 绑一个自己的域名就能解决「打不开」的问题。
+	//
+	// 用法：把下面的注释取消，把域名换成你自己的（比如从 dpdns.org / gv.uy
+	// 申请的免费子域名），然后重新 `npx wrangler deploy`。
+	//
+	// ⚠️ 前提：这个域名必须已经作为「站点」添加到你的 Cloudflare 账号，
+	//    并且状态是 Active（NS 已指向 Cloudflare）。
+	//    免费子域名能不能加进 Cloudflare，取决于它的根域有没有被 PSL 收录。
+	//
+	// 方式一：Custom Domain（最简单，推荐先用这个）
+	// "routes": [
+	//   { "pattern": "notes.你的域名", "custom_domain": true }
+	// ],
+	//
+	// 方式二：Worker Route（要自己做优选 IP 时用这个，
+	//        因为它允许你自己控制 DNS 记录的类型和值）
+	//   之后还需要在 Cloudflare 的 DNS 页面自己建一条记录
+	// "routes": [
+	//   { "pattern": "notes.你的域名/*", "zone_name": "你的域名" }
+	// ],
+}

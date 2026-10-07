@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>学习空间</title>
+  <meta name="description" content="个人学习笔记、待办、习惯打卡与文档阅读空间">
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- iOS 添加到主屏幕后全屏显示 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="学习空间">
+  <link rel="apple-touch-icon" href="/icon.svg">
+
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <noscript>
+    <div style="max-width:680px;margin:60px auto;padding:24px;font-family:system-ui,sans-serif">
+      <h1>需要开启 JavaScript</h1>
+      <p>这个应用依赖 JavaScript 才能运行，请在浏览器设置里开启后刷新。</p>
+    </div>
+  </noscript>
+
+  <!-- ============================================================
+       自检面板
+       ------------------------------------------------------------
+       默认隐藏。只在「页面没能启动起来」时自动出现，
+       这样白屏会变成一段能看懂的原因说明，而不是一片空白。
+
+       故意全部使用行内样式：万一 app.css 没加载成功，
+       这个面板也必须能正常显示。
+       ============================================================ -->
+  <div id="selfcheck" style="display:none;position:fixed;inset:0;z-index:9999;
+       background:#faf9f6;color:#1d2126;overflow:auto;padding:24px 16px;
+       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+       font-size:15px;line-height:1.7">
+    <div style="max-width:700px;margin:0 auto">
+      <div style="font-size:34px;line-height:1">⚠️</div>
+      <h1 style="font-size:21px;margin:10px 0 6px;font-weight:700">页面没有正常启动</h1>
+      <p id="sc-title" style="color:#5b6470;margin:0 0 18px"></p>
+
+      <pre id="sc-detail" style="background:#fff;border:1px solid #e7e3db;border-radius:10px;
+           padding:14px;font-size:12.5px;line-height:1.6;white-space:pre-wrap;word-break:break-all;
+           margin:0 0 18px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#c0392b"></pre>
+
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px">
+        <button id="sc-diag" style="padding:9px 16px;border-radius:9px;border:1px solid #186b5f;
+                background:#186b5f;color:#fff;font-size:14px;font-weight:600;cursor:pointer">
+          运行自检
+        </button>
+        <button id="sc-reset" style="padding:9px 16px;border-radius:9px;border:1px solid #d8d2c7;
+                background:#fff;color:#1d2126;font-size:14px;font-weight:600;cursor:pointer">
+          清除缓存并重载
+        </button>
+        <button id="sc-hide" style="padding:9px 16px;border-radius:9px;border:1px solid #d8d2c7;
+                background:#fff;color:#5b6470;font-size:14px;cursor:pointer">
+          继续等待
+        </button>
+      </div>
+
+      <pre id="sc-result" style="display:none;background:#fff;border:1px solid #e7e3db;border-radius:10px;
+           padding:14px;font-size:12.5px;line-height:1.75;white-space:pre-wrap;word-break:break-all;
+           margin:0 0 18px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#1d2126"></pre>
+
+      <div style="background:#e7f2ef;border-radius:10px;padding:14px;color:#0f4a41;font-size:13.5px">
+        <b>接下来怎么做</b><br>
+        1. 按 <b>F12</b>（手机上用「检查元素」）打开开发者工具的 <b>Console</b> 面板<br>
+        2. 把红色的报错信息截图或复制下来<br>
+        3. 再切到 <b>Network</b> 面板刷新一次，看哪个请求是红色的<br>
+        4. 把这些信息发给小华，就能定位了
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       诊断脚本：必须放在 app.js 之前
+       ============================================================ -->
+  <script>
+    (function () {
+      var panel = document.getElementById('selfcheck');
+      var titleEl = document.getElementById('sc-title');
+      var detailEl = document.getElementById('sc-detail');
+      var resultEl = document.getElementById('sc-result');
+      var hiddenByUser = false;
+
+      function appHasContent() {
+        var app = document.getElementById('app');
+        return !!(app && app.children.length > 0);
+      }
+
+      function show(title, detail) {
+        // 应用已经渲染出来了 → 只是个小错误，不打扰用户，只打到控制台
+        if (appHasContent()) {
+          console.error('[诊断]', title, detail);
+          return;
+        }
+        if (hiddenByUser) return;
+        titleEl.textContent = title || '';
+        detailEl.textContent = detail || '';
+        detailEl.style.display = detail ? 'block' : 'none';
+        panel.style.display = 'block';
+      }
+
+      // 暴露出去，方便 app.js 里的错误也能走到这里
+      window.__selfcheck = show;
+
+      // 捕获资源加载失败（脚本 / 样式表 404 或 MIME 类型不对）
+      window.addEventListener(
+        'error',
+        function (event) {
+          var target = event.target;
+          if (target && target !== window && target.tagName) {
+            var url = target.src || target.href || '';
+            show(
+              '有资源加载失败：' + target.tagName.toLowerCase(),
+              url + '\n\n检查这个文件是不是 404，或者返回的 Content-Type 不对。',
+            );
+            return;
+          }
+          show(
+            'JavaScript 运行出错',
+            (event.message || '') +
+              (event.filename ? '\n' + event.filename + ':' + (event.lineno || 0) + ':' + (event.colno || 0) : ''),
+          );
+        },
+        true,
+      );
+
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason;
+        show(
+          '有一个异步操作失败了',
+          reason && reason.message ? reason.message : String(reason),
+        );
+      });
+
+      // 看门狗：几秒后页面还是空的，就说明启动失败了
+      var watchdog = setTimeout(function () {
+        if (!appHasContent()) {
+          show(
+            'JavaScript 没有启动成功',
+            'index.html 已经加载（所以你看到了这个面板），但 app.js 没有把界面渲染出来。\n' +
+              '最常见的原因是 /js/app.js 加载失败，或者它执行时报了错。\n\n' +
+              '当前地址：' + location.href,
+          );
+        }
+      }, 5000);
+
+      // 一旦应用渲染出来了，就把面板收起来（应对慢网络下的误判）
+      var poll = setInterval(function () {
+        if (appHasContent()) {
+          panel.style.display = 'none';
+          clearTimeout(watchdog);
+          clearInterval(poll);
+        }
+      }, 800);
+
+      document.getElementById('sc-hide').addEventListener('click', function () {
+        hiddenByUser = true;
+        panel.style.display = 'none';
+      });
+
+      document.getElementById('sc-reset').addEventListener('click', async function () {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = '正在清除…';
+        try {
+          if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(
+              regs.map(function (r) {
+                return r.unregister();
+              }),
+            );
+          }
+          if (window.caches) {
+            var keys = await caches.keys();
+            await Promise.all(
+              keys.map(function (k) {
+                return caches.delete(k);
+              }),
+            );
+          }
+        } catch (err) {
+          console.warn('清除缓存时出错（继续重载）:', err);
+        }
+        location.reload();
+      });
+
+      document.getElementById('sc-diag').addEventListener('click', async function () {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = '检测中…';
+        resultEl.style.display = 'block';
+        resultEl.textContent = '正在检测…\n';
+
+        var lines = [];
+        lines.push('地址        ' + location.href);
+        lines.push('浏览器      ' + navigator.userAgent);
+        lines.push('');
+
+        // 1. 关键静态资源（顺便校验 Content-Type，因为类型不对 = 必然白屏）
+        var assets = [
+          { path: '/', want: 'html' },
+          { path: '/app.css', want: 'css' },
+          { path: '/js/app.js', want: 'javascript' },
+          { path: '/js/util.js', want: 'javascript' },
+          { path: '/js/api.js', want: 'javascript' },
+          { path: '/js/components.js', want: 'javascript' },
+          { path: '/js/markdown.js', want: 'javascript' },
+          { path: '/js/views/dashboard.js', want: 'javascript' },
+          { path: '/js/views/notes.js', want: 'javascript' },
+          { path: '/sw.js', want: 'javascript' }
+        ];
+        lines.push('— 静态资源 —');
+        for (var i = 0; i < assets.length; i++) {
+          var item = assets[i];
+          try {
+            var res = await fetch(item.path, { cache: 'no-store' });
+            var body = await res.text();
+            var ct = (res.headers.get('content-type') || '').toLowerCase();
+            var typeOk = ct.indexOf(item.want) >= 0;
+            var allOk = res.ok && typeOk;
+
+            lines.push(
+              '  ' +
+                (allOk ? '✅' : '❌') +
+                ' ' +
+                item.path.padEnd(28) +
+                ' HTTP ' +
+                res.status +
+                '  ' +
+                (ct || '无 content-type') +
+                '  ' +
+                body.length +
+                ' 字符',
+            );
+
+            if (!typeOk) {
+              lines.push('     ⚠️ 类型不对！返回内容开头是：');
+              lines.push('     ' + body.slice(0, 120).replace(/\s+/g, ' '));
+              if (/<!doctype html|<html/i.test(body)) {
+                lines.push('     → 这是 HTML！说明这个文件没被当成静态资源，走了页面回退。');
+              }
+            } else if (!res.ok) {
+              lines.push('     ⚠️ HTTP ' + res.status + '：文件不存在或没有部署上去。');
+            }
+          } catch (err) {
+            lines.push('  ❌ ' + item.path.padEnd(28) + ' 请求失败: ' + err.message);
+          }
+        }
+
+        // 2. 接口
+        lines.push('');
+        lines.push('— 接口 —');
+        var endpoints = ['/api/health', '/api/auth/me'];
+        for (var j = 0; j < endpoints.length; j++) {
+          var ep = endpoints[j];
+          try {
+            var r2 = await fetch(ep, { cache: 'no-store' });
+            var text = await r2.text();
+            lines.push('  ' + (r2.ok ? '✅' : '⚠️') + ' ' + ep.padEnd(26) + ' HTTP ' + r2.status);
+            lines.push('     ' + text.slice(0, 200));
+          } catch (err) {
+            lines.push('  ❌ ' + ep.padEnd(26) + ' 请求失败: ' + err.message);
+          }
+        }
+
+        // 3. 环境
+        lines.push('');
+        lines.push('— 环境 —');
+        lines.push('  Service Worker  ' + ('serviceWorker' in navigator ? (navigator.serviceWorker.controller ? '已控制本页' : '已支持，未控制') : '不支持'));
+        lines.push('  localStorage    ' + (function () { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return '可用'; } catch (e) { return '被禁用（' + e.name + '）'; } })());
+        lines.push('  内网/本地        ' + ['localhost', '127.0.0.1', ''].indexOf(location.hostname) >= 0);
+
+        resultEl.textContent = lines.join('\n');
+        btn.disabled = false;
+        btn.textContent = '重新自检';
+      });
+    })();
+  </script>
+
+  <script type="module" src="/js/app.js"></script>
+
+  <script>
+    // 注册 Service Worker，让手机可以「添加到主屏幕」并具备基本离线能力。
+    // 本地开发时不注册，避免缓存干扰调试。
+    (function () {
+      var isLocal =
+        location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1' ||
+        location.hostname === '';
+
+      if (isLocal) return;
+      if (!('serviceWorker' in navigator)) return;
+
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.warn('Service Worker 注册失败（不影响使用）:', err);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

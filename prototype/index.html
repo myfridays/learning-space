@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习空间 · 我的笔记与读书痕迹</title>
+<style>
+/* ============================================================
+   设计变量：改这里就能整体换配色
+   ============================================================ */
+:root{
+  --bg:#faf9f6;
+  --surface:#ffffff;
+  --surface-2:#f4f2ed;
+  --border:#e7e3db;
+  --border-strong:#d8d2c7;
+  --text:#1d2126;
+  --text-2:#5b6470;
+  --text-3:#8d95a0;
+  --accent:#186b5f;
+  --accent-ink:#0f4a41;
+  --accent-soft:#e7f2ef;
+  --accent-line:#a9cec6;
+  --topbar:rgba(250,249,246,.84);
+  --h1:#bfd2cb; --h2:#8ab1a9; --h3:#569187; --h4:#186b5f;
+  --warn:#b5741f;
+  --warn-soft:#fdf3e3;
+  --done:#8d95a0;
+  --radius:14px;
+  --radius-sm:9px;
+  --shadow:0 1px 2px rgba(24,32,40,.04), 0 8px 24px -12px rgba(24,32,40,.14);
+  --shadow-hover:0 2px 4px rgba(24,32,40,.05), 0 14px 34px -14px rgba(24,32,40,.22);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#12151a;
+  --surface:#1a1e24;
+  --surface-2:#21262d;
+  --border:#2a3038;
+  --border-strong:#39414b;
+  --text:#e8ebee;
+  --text-2:#9aa4b0;
+  --text-3:#6e7885;
+  --accent:#4ec5ab;
+  --accent-ink:#8fe0cd;
+  --accent-soft:rgba(78,197,171,.12);
+  --accent-line:rgba(78,197,171,.35);
+  --topbar:rgba(18,21,26,.84);
+  --h1:#2c4c4b; --h2:#377269; --h3:#419888; --h4:#4ec5ab;
+  --warn:#e0a552;
+  --warn-soft:rgba(224,165,82,.12);
+  --done:#6e7885;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  --shadow-hover:0 2px 6px rgba(0,0,0,.35), 0 16px 36px -14px rgba(0,0,0,.7);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:15px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease,color .25s ease;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+h1,h2,h3,h4{margin:0;font-weight:650;line-height:1.35;letter-spacing:-.01em}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+
+/* ============================================================
+   顶栏
+   ============================================================ */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:var(--topbar);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-in{
+  max-width:1180px; margin:0 auto; padding:0 24px;
+  height:60px; display:flex; align-items:center; gap:26px;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;white-space:nowrap}
+.brand .mark{
+  width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--accent),var(--accent-ink));
+  color:#fff;font-size:14px;box-shadow:0 3px 10px -3px var(--accent);
+}
+html[data-theme="dark"] .brand .mark{color:#0c1512}
+.nav{display:flex;gap:2px;margin-left:6px;flex:1;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{
+  padding:7px 13px;border-radius:8px;font-size:14px;color:var(--text-2);
+  white-space:nowrap;transition:.16s;font-weight:500;
+}
+.nav a:hover{background:var(--surface-2);color:var(--text)}
+.nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.topbar-tools{display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  border:1px solid var(--border);background:var(--surface);color:var(--text-2);transition:.16s;
+}
+.icon-btn:hover{color:var(--accent);border-color:var(--accent-line);transform:translateY(-1px)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ============================================================
+   通用容器 / 卡片
+   ============================================================ */
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+}
+.card-head h3{font-size:14.5px;display:flex;align-items:center;gap:8px}
+.card-head .ico{font-size:15px}
+.card-head .more{font-size:12.5px;color:var(--text-3);font-weight:500;transition:.16s}
+.card-head .more:hover{color:var(--accent)}
+.card-body{padding:16px 20px}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{padding:44px 0 30px;border-bottom:1px solid var(--border)}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.hero h1{font-size:31px;letter-spacing:-.025em;margin-bottom:12px}
+.hero h1 .wave{display:inline-block;animation:wave 2.6s ease-in-out infinite;transform-origin:70% 70%}
+@keyframes wave{0%,60%,100%{transform:rotate(0)}70%{transform:rotate(15deg)}80%{transform:rotate(-8deg)}90%{transform:rotate(12deg)}}
+.hero .lede{color:var(--text-2);max-width:560px;font-size:15.5px}
+.hero .lede code{
+  font-family:var(--mono);font-size:13px;background:var(--accent-soft);
+  color:var(--accent);padding:1.5px 6px;border-radius:5px;
+}
+.search{
+  display:flex;align-items:center;gap:9px;margin-top:22px;max-width:460px;
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  padding:0 14px;height:44px;box-shadow:var(--shadow);transition:.2s;
+}
+.search:focus-within{border-color:var(--accent-line);box-shadow:0 0 0 3.5px var(--accent-soft)}
+.search svg{width:16px;height:16px;color:var(--text-3);flex:none}
+.search input{
+  flex:1;border:none;outline:none;background:none;font:inherit;color:var(--text);min-width:0;
+}
+.search input::placeholder{color:var(--text-3)}
+.search kbd{
+  font-family:var(--mono);font-size:11px;color:var(--text-3);border:1px solid var(--border);
+  border-radius:5px;padding:1px 5px;background:var(--surface-2);
+}
+.tags-inline{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
+.tag{
+  font-size:12.5px;padding:3.5px 10px;border-radius:999px;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);
+  transition:.16s;cursor:pointer;
+}
+.tag:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
+.tag.hot{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+
+/* 头像 */
+.avatar{
+  width:92px;height:92px;border-radius:26px;flex:none;
+  background:linear-gradient(145deg,var(--accent),var(--accent-ink));
+  display:grid;place-items:center;font-size:36px;color:#fff;
+  box-shadow:0 14px 30px -12px var(--accent);
+}
+html[data-theme="dark"] .avatar{color:#0c1512}
+
+/* ============================================================
+   统计条
+   ============================================================ */
+.stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin:26px 0 34px;
+  box-shadow:var(--shadow);
+}
+.stat{background:var(--surface);padding:17px 20px;transition:.18s;cursor:default}
+.stat:hover{background:var(--surface-2)}
+.stat .n{font-size:25px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat .n small{font-size:13px;font-weight:600;color:var(--text-3);margin-left:2px;letter-spacing:0}
+.stat .l{font-size:12.5px;color:var(--text-3);margin-top:2px;display:flex;align-items:center;gap:6px}
+.stat .delta{font-size:11.5px;color:var(--accent);font-weight:600}
+
+/* ============================================================
+   主栅格
+   ============================================================ */
+.grid{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:22px;padding-bottom:52px}
+.col{display:flex;flex-direction:column;gap:22px}
+
+/* ---------- 笔记列表 ---------- */
+.note{
+  display:block;padding:15px 20px;border-bottom:1px solid var(--border);
+  transition:.18s;position:relative;
+}
+.note:last-child{border-bottom:none}
+.note:hover{background:var(--surface-2)}
+.note:hover .note-title{color:var(--accent)}
+.note::before{
+  content:"";position:absolute;left:0;top:14px;bottom:14px;width:2.5px;
+  background:var(--accent);border-radius:0 3px 3px 0;opacity:0;transition:.18s;
+}
+.note:hover::before{opacity:1}
+.note-title{font-size:15px;font-weight:600;margin-bottom:5px;transition:.16s;letter-spacing:-.005em}
+.note-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12.5px;color:var(--text-3)}
+.note-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--border-strong)}
+.note-tag{color:var(--accent);font-weight:500}
+.note-ex{font-size:13.5px;color:var(--text-2);margin-top:7px;line-height:1.6}
+.src{
+  display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--warn);
+  background:var(--warn-soft);padding:2px 8px;border-radius:6px;font-weight:600;
+}
+
+/* ---------- PDF 进度 ---------- */
+.pdf{display:flex;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);transition:.18s;cursor:pointer}
+.pdf:last-child{border-bottom:none}
+.pdf:hover{background:var(--surface-2)}
+.pdf-cover{
+  width:42px;height:56px;border-radius:7px;flex:none;display:grid;place-items:center;
+  font-size:19px;background:var(--surface-2);border:1px solid var(--border);
+  box-shadow:inset -3px 0 0 rgba(0,0,0,.045);
+}
+.pdf-main{flex:1;min-width:0}
+.pdf-name{
+  font-size:14px;font-weight:600;margin-bottom:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pdf-sub{font-size:12px;color:var(--text-3);margin-bottom:9px;font-variant-numeric:tabular-nums}
+.bar{height:5px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar i{
+  display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-ink));
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+.pdf-foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-3);margin-top:6px}
+.pdf-foot .pct{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- 待办 ---------- */
+.todo{display:flex;gap:11px;padding:11px 20px;border-bottom:1px solid var(--border);transition:.18s;align-items:flex-start}
+.todo:last-child{border-bottom:none}
+.todo:hover{background:var(--surface-2)}
+.cb{
+  width:18px;height:18px;border-radius:5.5px;border:1.7px solid var(--border-strong);
+  flex:none;margin-top:2px;display:grid;place-items:center;transition:.18s;
+}
+.cb:hover{border-color:var(--accent);background:var(--accent-soft)}
+.cb svg{width:11px;height:11px;color:#fff;opacity:0;transform:scale(.5);transition:.18s}
+html[data-theme="dark"] .cb svg{color:#0c1512}
+.todo.done .cb{background:var(--accent);border-color:var(--accent)}
+.todo.done .cb svg{opacity:1;transform:scale(1)}
+.todo-txt{flex:1;font-size:14px;transition:.18s;min-width:0}
+.todo.done .todo-txt{color:var(--done);text-decoration:line-through;text-decoration-color:var(--border-strong)}
+.todo-note{font-size:11.5px;color:var(--text-3);display:block;margin-top:2px;text-decoration:none!important}
+.pri{
+  font-size:10.5px;font-weight:700;padding:1.5px 7px;border-radius:5px;flex:none;
+  margin-top:3px;letter-spacing:.02em;
+}
+.pri.hi{background:#fdeaea;color:#c0392b}
+.pri.mid{background:var(--warn-soft);color:var(--warn)}
+html[data-theme="dark"] .pri.hi{background:rgba(192,57,43,.16);color:#ef7b6d}
+.todo-bar{
+  padding:12px 20px;font-size:12.5px;color:var(--text-3);
+  display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);
+}
+.todo-bar b{color:var(--accent);font-variant-numeric:tabular-nums}
+
+/* ---------- 习惯 ---------- */
+.habit{display:flex;align-items:center;gap:11px;padding:10px 20px;border-bottom:1px solid var(--border);transition:.18s}
+.habit:last-of-type{border-bottom:none}
+.habit:hover{background:var(--surface-2)}
+.habit-ico{
+  width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;
+  font-size:15px;background:var(--surface-2);border:1px solid var(--border);
+}
+.habit-main{flex:1;min-width:0}
+.habit-name{font-size:13.5px;font-weight:600}
+.habit-streak{font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:4px;margin-top:1px}
+.habit-streak b{color:var(--warn);font-variant-numeric:tabular-nums}
+.check{
+  width:26px;height:26px;border-radius:8px;border:1.7px solid var(--border-strong);
+  display:grid;place-items:center;flex:none;transition:.18s;font-size:12px;
+}
+.check:hover{border-color:var(--accent);background:var(--accent-soft)}
+.check.on{background:var(--accent);border-color:var(--accent);color:#fff}
+html[data-theme="dark"] .check.on{color:#0c1512}
+
+/* 热力图 */
+.heat{padding:14px 20px 18px;border-top:1px solid var(--border)}
+.heat-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.heat-head span{font-size:11.5px;color:var(--text-3);font-weight:600;letter-spacing:.02em}
+.heat-grid{
+  display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);
+  gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;
+}
+.heat-grid i{
+  width:11px;height:11px;border-radius:2.5px;background:var(--surface-2);
+  border:1px solid transparent;transition:.14s;cursor:pointer;
+}
+.heat-grid i:hover{transform:scale(1.32);border-color:var(--accent);z-index:2}
+.heat-grid i[data-l="1"]{background:var(--h1)}
+.heat-grid i[data-l="2"]{background:var(--h2)}
+.heat-grid i[data-l="3"]{background:var(--h3)}
+.heat-grid i[data-l="4"]{background:var(--h4)}
+.heat-legend{display:flex;align-items:center;gap:5px;justify-content:flex-end;margin-top:9px;font-size:11px;color:var(--text-3)}
+.heat-legend i{width:10px;height:10px;border-radius:2.5px;background:var(--surface-2);display:block}
+
+/* 页脚 */
+footer{border-top:1px solid var(--border);padding:26px 0 40px;color:var(--text-3);font-size:12.5px}
+.foot-in{max-width:1180px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a:hover{color:var(--accent)}
+
+/* 提示 */
+.toast{
+  position:fixed;left:50%;bottom:30px;transform:translate(-50%,26px);
+  background:var(--text);color:var(--bg);padding:10px 20px;border-radius:11px;
+  font-size:13.5px;font-weight:500;box-shadow:0 14px 34px -12px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:.28s cubic-bezier(.4,0,.2,1);z-index:99;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.empty{padding:34px 20px;text-align:center;color:var(--text-3);font-size:13.5px}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media(max-width:940px){
+  .grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .hero{padding:32px 0 24px}
+  .hero h1{font-size:25px}
+  .avatar{width:70px;height:70px;border-radius:20px;font-size:28px}
+  .nav{display:none}
+}
+@media(max-width:560px){
+  .wrap,.topbar-in,.foot-in{padding-left:16px;padding-right:16px}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{padding:13px 15px}
+  .stat .n{font-size:21px}
+  .card-body,.card-head,.note,.pdf,.todo,.habit,.heat{padding-left:15px;padding-right:15px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶栏 ==================== -->
+<header class="topbar">
+  <div class="topbar-in">
+    <a href="#" class="brand"><span class="mark">📚</span>学习空间</a>
+    <nav class="nav">
+      <a href="#" class="on">首页</a>
+      <a href="#" data-soon="笔记">笔记</a>
+      <a href="#" data-soon="PDF 书库">PDF 书库</a>
+      <a href="#" data-soon="习惯">习惯</a>
+      <a href="#" data-soon="待办">待办</a>
+      <a href="#" data-soon="关于">关于</a>
+    </nav>
+    <div class="topbar-tools">
+      <button class="icon-btn" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+      <button class="icon-btn" data-soon="新建笔记" title="新建笔记" aria-label="新建笔记">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== Hero ==================== -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div style="flex:1;min-width:300px">
+        <h1>你好，我是 <span style="color:var(--accent)">阿华</span> <span class="wave">👋</span></h1>
+        <p class="lede">
+          这里记录我的工作笔记、学习心得和读书痕迹。<br>
+          正在读 <b>CSAPP</b> 和 <b>DDIA</b>，日常用 <code>Markdown</code> 写笔记，<code>PDF.js</code> 划词摘录。
+        </p>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="搜索笔记、PDF、标签…" autocomplete="off">
+          <kbd>Ctrl K</kbd>
+        </div>
+        <div class="tags-inline">
+          <span class="tag hot">全部</span>
+          <span class="tag" data-tag="前端">前端</span>
+          <span class="tag" data-tag="数据库">数据库</span>
+          <span class="tag" data-tag="读书">读书</span>
+          <span class="tag" data-tag="计算机基础">计算机基础</span>
+          <span class="tag" data-tag="速查">速查</span>
+        </div>
+      </div>
+      <div class="avatar">🐧</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 统计 ==================== -->
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n">128<small>篇</small></div><div class="l">📝 笔记总数 <span class="delta">本周 +6</span></div></div>
+    <div class="stat"><div class="n">6<small>本</small></div><div class="l">📖 在读 PDF</div></div>
+    <div class="stat"><div class="n">27<small>天</small></div><div class="l">🔥 最长连续打卡</div></div>
+    <div class="stat"><div class="n">3<small>项</small></div><div class="l">✅ 今日待办未完成</div></div>
+  </div>
+</div>
+
+<!-- ==================== 主体 ==================== -->
+<main class="wrap">
+  <div class="grid">
+
+    <!-- ---------- 左列 ---------- -->
+    <div class="col">
+
+      <section class="card">
+        <div class="card-head">
+          <h3><span class="ico">📝</span>最近笔记</h3>
+          <a href="#" class="more" data-soon="笔记列表">全部 128 篇 →</a>
+        </div>
+        <div id="noteList">
+          <!-- JS 渲染 -->
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3><span class="ico">📖</span>正在读</h3>
+          <a href="#" class="more" data-soon="PDF 书库">书库 →</a>
+        </div>
+        <div class="pdf">
+          <div class="pdf-cover">🖥️</div>
+          <div class="pdf-main">
+            <div class="pdf-name">深入理解计算机系统（第 3 版）</div>
+            <div class="pdf-sub">CSAPP · 第 3 章 程序的机器级表示</div>
+            <div class="bar"><i style="width:17%"></i></div>
+            <div class="pdf-foot"><span>第 187 / 1077 页</span><span class="pct">17%</span></div>
+          </div>
+        </div>
+        <div class="pdf">
+          <div class="pdf-cover">🗄️</div>
+          <div class="pdf-main">
+            <div class="pdf-name">Designing Data-Intensive Applications</div>
+            <div class="pdf-sub">DDIA · Ch.5 Replication</div>
+            <div class="bar"><i style="width:39%"></i></div>
+            <div class="pdf-foot"><span>第 240 / 616 页</span><span class="pct">39%</span></div>
+          </div>
+        </div>
+        <div class="pdf">
+          <div class="pdf-cover">🐍</div>
+          <div class="pdf-main">
+            <div class="pdf-name">流畅的 Python（第 2 版）</div>
+            <div class="pdf-sub">第 5 章 数据类构建器</div>
+            <div class="bar"><i style="width:12%"></i></div>
+            <div class="pdf-foot"><span>第 98 / 792 页</span><span class="pct">12%</span></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ---------- 右列 ---------- -->
+    <div class="col">
+
+      <section class="card">
+        <div class="card-head">
+          <h3><span class="ico">✅</span>今日待办</h3>
+          <span class="more" id="todoFrac">2 / 5</span>
+        </div>
+        <div id="todoList"><!-- JS 渲染 --></div>
+        <div class="todo-bar">
+          <span>本周完成率 <b>68%</b></span>
+          <button class="more" data-soon="新建待办">+ 添加</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3><span class="ico">🔥</span>习惯打卡</h3>
+          <span class="more" data-soon="习惯详情">详情 →</span>
+        </div>
+        <div id="habitList"><!-- JS 渲染 --></div>
+        <div class="heat">
+          <div class="heat-head"><span>近 16 周</span><span id="heatSum"></span></div>
+          <div class="heat-grid" id="heat"><!-- JS 渲染 --></div>
+          <div class="heat-legend">
+            <span>少</span>
+            <i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i>
+            <span>多</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <span>📚 学习空间 · 首页原型 v0.1</span>
+    <span>共 128 篇笔记 · 9 本 PDF · 数据最后更新于 刚刚</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   1. 数据（正式版会从数据库/API 来）
+   ============================================================ */
+const NOTES = [
+  { t:"JavaScript 事件循环：宏任务与微任务到底怎么排队", tag:"前端", time:"3 天前", read:"8 分钟",
+    ex:"从一次 setTimeout 输出顺序的困惑出发，把调用栈、任务队列、微任务检查点串起来……" },
+  { t:"SQLite FTS5 中文分词踩坑记录", tag:"数据库", time:"5 天前", read:"6 分钟",
+    ex:"默认 tokenizer 对中文基本没用，试了 simple / trigram / jieba 预处理三种方案。" },
+  { t:"CSAPP 第 3 章：程序的机器级表示（读书笔记）", tag:"计算机基础", time:"上周", read:"20 分钟",
+    ex:"寄存器、寻址模式、过程调用约定，以及为什么理解汇编能写好 C。", src:"📄 深入理解计算机系统 · p.187" },
+  { t:"Tailwind 响应式断点速查", tag:"速查", time:"上周", read:"2 分钟",
+    ex:"sm 640 / md 768 / lg 1024 / xl 1280 / 2xl 1536，以及移动优先的写法习惯。" },
+  { t:"React 19 的 use() Hook 到底解决了什么问题", tag:"前端", time:"2 周前", read:"7 分钟",
+    ex:"它让组件可以「条件式」地读取 Promise 和 Context，配合 Suspense 简化加载态。" },
+  { t:"DDIA 第 5 章：复制（Replication）要点整理", tag:"读书", time:"2 周前", read:"15 分钟",
+    ex:"单主、多主、无主三种复制模型的取舍，以及复制延迟带来的读己之写问题。", src:"📄 DDIA · p.240" },
+];
+
+const TODOS = [
+  { t:"整理本周 SQLite 全文搜索的笔记", pri:"mid", done:true,  note:"已有草稿，缺配图" },
+  { t:"完成 CSAPP 第 3 章课后习题",       pri:"hi",  done:false, note:"今天截止" },
+  { t:"把 PDF 划词摘录功能排进需求清单",   pri:null,  done:false },
+  { t:"复盘这周 3 个未完成的待办",         pri:null,  done:false },
+  { t:"确认热力图统计口径（时区问题）",     pri:"mid", done:true },
+];
+
+const HABITS = [
+  { i:"📖", n:"阅读 30 分钟", s:12, on:true  },
+  { i:"💻", n:"写代码",       s:27, on:true  },
+  { i:"✍️", n:"写一条笔记",   s:9,  on:false },
+  { i:"🏃", n:"运动",         s:4,  on:false },
+];
+
+/* ============================================================
+   2. 渲染笔记
+   ============================================================ */
+const noteList = document.getElementById('noteList');
+function renderNotes(kw = "", tag = "全部"){
+  kw = kw.trim().toLowerCase();
+  const rows = NOTES.filter(n=>{
+    const okTag = tag === "全部" || n.tag === tag;
+    const okKw  = !kw || (n.t + n.ex + n.tag).toLowerCase().includes(kw);
+    return okTag && okKw;
+  });
+  if(!rows.length){
+    noteList.innerHTML = `<div class="empty">没有匹配的笔记 🔍<br><span style="font-size:12px">换个关键词试试</span></div>`;
+    return;
+  }
+  noteList.innerHTML = rows.map(n=>`
+    <a href="#" class="note" data-soon="笔记详情">
+      <div class="note-title">${n.t}</div>
+      <div class="note-meta">
+        <span class="note-tag"># ${n.tag}</span>
+        <span class="dot"></span><span>${n.time}</span>
+        <span class="dot"></span><span>${n.read}</span>
+        ${n.src ? `<span class="dot"></span><span class="src">${n.src}</span>` : ``}
+      </div>
+      <div class="note-ex">${n.ex}</div>
+    </a>`).join('');
+}
+
+/* ============================================================
+   3. 渲染待办
+   ============================================================ */
+const todoList = document.getElementById('todoList');
+function renderTodos(){
+  todoList.innerHTML = TODOS.map((d,i)=>`
+    <div class="todo ${d.done?'done':''}" data-i="${i}">
+      <button class="cb" aria-label="切换完成">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
+      </button>
+      <div class="todo-txt">${d.t}${d.note?`<span class="todo-note">${d.note}</span>`:``}</div>
+      ${d.pri?`<span class="pri ${d.pri}">${d.pri==='hi'?'紧急':'普通'}</span>`:``}
+    </div>`).join('');
+  const done = TODOS.filter(d=>d.done).length;
+  document.getElementById('todoFrac').textContent = `${done} / ${TODOS.length}`;
+}
+todoList.addEventListener('click', e=>{
+  const row = e.target.closest('.todo'); if(!row) return;
+  if(e.target.closest('.cb') || e.target.closest('.todo-txt')){
+    const i = +row.dataset.i;
+    TODOS[i].done = !TODOS[i].done;
+    renderTodos();
+  }
+});
+
+/* ============================================================
+   4. 渲染习惯
+   ============================================================ */
+document.getElementById('habitList').innerHTML = HABITS.map((h,i)=>`
+  <div class="habit">
+    <span class="habit-ico">${h.i}</span>
+    <div class="habit-main">
+      <div class="habit-name">${h.n}</div>
+      <div class="habit-streak">🔥 连续 <b>${h.s}</b> 天</div>
+    </div>
+    <button class="check ${h.on?'on':''}" data-i="${i}">${h.on?'✓':''}</button>
+  </div>`).join('');
+document.getElementById('habitList').addEventListener('click', e=>{
+  const b = e.target.closest('.check'); if(!b) return;
+  const h = HABITS[+b.dataset.i];
+  h.on = !h.on;
+  b.classList.toggle('on', h.on);
+  b.textContent = h.on ? '✓' : '';
+  toast(h.on ? `${h.i} ${h.n} 已打卡` : `${h.i} ${h.n} 已取消`);
+});
+
+/* ============================================================
+   5. 渲染热力图（近 16 周 = 112 天）
+   ============================================================ */
+const DAYS = 112, heat = document.getElementById('heat');
+const today = new Date(); today.setHours(0,0,0,0);
+// 让最后一列对齐到本周
+const start = new Date(today);
+start.setDate(start.getDate() - (DAYS - 1) + (6 - today.getDay()));
+let cells = '', total = 0;
+for(let i = 0; i < DAYS; i++){
+  const d = new Date(start); d.setDate(start.getDate() + i);
+  const future = d > today;
+  // 伪随机但稳定的活跃度
+  const seed = (d.getDate()*37 + d.getMonth()*11 + d.getFullYear()) % 100;
+  const lv = future ? -1 : (seed < 26 ? 0 : seed < 52 ? 1 : seed < 72 ? 2 : seed < 89 ? 3 : 4);
+  if(lv > 0) total += lv;
+  const label = `${d.getMonth()+1} 月 ${d.getDate()} 日`;
+  cells += `<i data-l="${lv<0?0:lv}" style="${future?'opacity:.28;cursor:default':''}"
+              title="${label}${future?' · 未来':` · 活跃度 ${lv}`}"></i>`;
+}
+heat.innerHTML = cells;
+document.getElementById('heatSum').textContent = `共 ${total} 次记录`;
+
+/* ============================================================
+   6. 交互：搜索 / 标签 / 主题 / 提示
+   ============================================================ */
+let curTag = "全部";
+document.getElementById('q').addEventListener('input', e=>renderNotes(e.target.value, curTag));
+
+document.querySelectorAll('.tag').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tag').forEach(x=>x.classList.remove('hot'));
+    t.classList.add('hot');
+    curTag = t.dataset.tag || "全部";
+    renderNotes(document.getElementById('q').value, curTag);
+  });
+});
+
+// 主题
+const root = document.documentElement;
+const sunPath = `<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/>`;
+const moonPath = `<path d="M20.5 14.3A8.4 8.4 0 0 1 9.7 3.5a8.4 8.4 0 1 0 10.8 10.8Z"/>`;
+function setTheme(t){
+  root.dataset.theme = t;
+  document.getElementById('themeIcon').innerHTML = t === 'dark' ? sunPath : moonPath;
+  try{ localStorage.setItem('theme', t); }catch(e){}
+}
+setTheme((()=>{ try{ return localStorage.getItem('theme'); }catch(e){ return null; } })()
+  || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+document.getElementById('themeBtn').addEventListener('click', ()=>
+  setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+// 未实现功能的友好提示
+let tTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(tTimer); tTimer = setTimeout(()=>el.classList.remove('on'), 2000);
+}
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-soon]');
+  if(el){ e.preventDefault(); toast(`「${el.dataset.soon}」页面待实现 · 这是首页原型`); }
+});
+// Ctrl/Cmd + K 聚焦搜索
+addEventListener('keydown', e=>{
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
+    e.preventDefault(); document.getElementById('q').focus();
+  }
+});
+
+/* 首屏 */
+renderNotes();
+renderTodos();
+</script>
+</body>
+</html>

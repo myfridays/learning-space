@@ -1,0 +1,32 @@
+{
+  "name": "learning-space",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "个人学习空间 —— 笔记 / 待办 / 习惯 / 文档，运行在 Cloudflare Workers + D1 + R2",
+  "scripts": {
+    "dev": "node tools/dev.mjs",
+    "migrate": "node tools/migrate.mjs",
+    "pretest": "node tools/check-imports.mjs && node tools/test-modules.mjs",
+    "test": "node tools/test-api.mjs",
+    "test:imports": "node tools/check-imports.mjs",
+    "test:modules": "node tools/test-modules.mjs",
+    "test:units": "node tools/test-units.mjs",
+    "test:http": "node tools/test-http.mjs",
+    "test:all": "node tools/check-imports.mjs && node tools/test-modules.mjs && node tools/test-units.mjs && node tools/test-api.mjs",
+    "db:local": "wrangler d1 execute learning-space --local --file=./migrations/0001_init.sql",
+    "db:local:seed": "wrangler d1 execute learning-space --local --file=./migrations/0002_seed.sql",
+    "db:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0001_init.sql",
+    "db:remote:seed": "wrangler d1 execute learning-space --remote --file=./migrations/0002_seed.sql",
+    "db:tables": "wrangler d1 execute learning-space --remote --command=\"SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name\"",
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail",
+    "backup": "wrangler d1 export learning-space --remote --output=./backup.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.20.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

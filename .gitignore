@@ -1,0 +1,24 @@
+# 依赖（本项目运行时零依赖，只有 wrangler 是开发依赖）
+node_modules/
+
+# Wrangler 本地状态（本地 D1 数据库等）
+.wrangler/
+
+# 本地开发数据：SQLite 文件 + 上传的文件（绝对不要提交！）
+.local/
+
+# 密钥，绝对不要提交
+.dev.vars
+.env
+.env.*
+
+# 数据库备份
+backup*.sql
+*.dump
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

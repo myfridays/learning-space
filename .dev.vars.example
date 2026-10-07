@@ -1,0 +1,18 @@
+# 复制这个文件为 .dev.vars（本地开发用），或者用 wrangler secret put 设置到线上。
+#
+#   cp .dev.vars.example .dev.vars
+#
+# .dev.vars 已被 .gitignore 忽略，不会被提交。
+
+# 登录密码。留空则不启用登录（仅建议在纯本地开发时这样）
+APP_PASSWORD=change-me-please
+
+# 会话签名密钥，随便一串长随机字符即可。生成方法：
+#   node -e "console.log(crypto.randomUUID()+crypto.randomUUID())"
+AUTH_SECRET=replace-with-a-long-random-string
+
+# 文档存储总容量上限（字节）。8 GiB = 8589934592
+STORAGE_QUOTA_BYTES=8589934592
+
+# 会话有效期（天）
+SESSION_DAYS=30
