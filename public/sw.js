@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v7-fixed-pet';
+const CACHE_NAME = 'learning-space-v8-animated-pet';
 
 const STATIC_ASSETS = [
   '/',
@@ -24,9 +24,12 @@ const STATIC_ASSETS = [
   '/js/app.js',
   '/js/cosmos.js',
   '/js/pet.js',
-  '/pet/companion/wink.webp',
-  '/pet/companion/cheer.webp',
-  '/pet/companion/wave.webp',
+  '/pet/companion/animated/wave.webp',
+  '/pet/companion/animated/jump.webp',
+  '/pet/companion/animated/blink.webp',
+  '/pet/companion/still/wave.webp',
+  '/pet/companion/still/jump.webp',
+  '/pet/companion/still/blink.webp',
   '/js/api.js',
   '/js/util.js',
   '/js/components.js',
