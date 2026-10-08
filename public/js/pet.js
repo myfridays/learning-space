@@ -12,10 +12,34 @@ export function initPet() {
   const dock = document.createElement('div');
   dock.className = 'space-pet-dock';
   dock.innerHTML = `<button type="button" class="space-pet-toggle" aria-controls="space-pet">🐋</button>
+    <button type="button" class="space-pet-sound" aria-label="桌宠静音"></button>
     <button type="button" class="space-pet__retry" hidden>重新加载角色</button>`;
   document.body.append(pet, dock);
   const toggle = dock.querySelector('.space-pet-toggle'), retry = dock.querySelector('.space-pet__retry');
   const character = pet.querySelector('button'), sprite = pet.querySelector('img');
+  const soundToggle = dock.querySelector('.space-pet-sound');
+  let muted = readStored('pet-muted', 'false') === 'true', activeSound;
+  const sounds = Object.fromEntries(['jump', 'cute', 'wave'].map(name => {
+    const audio = new Audio(`/pet/sounds/${name}.mp3`);
+    audio.preload = 'auto'; audio.volume = 0.65;
+    return [name, audio];
+  }));
+  function stopSound() {
+    if (!activeSound) return;
+    activeSound.pause(); activeSound.currentTime = 0; activeSound = null;
+  }
+  function playSound(name) {
+    stopSound();
+    if (muted || pet.hidden || document.hidden) return;
+    activeSound = sounds[name];
+    // Call directly from the gesture; blocked/missing audio must not interrupt the pose.
+    activeSound.play().catch(() => {});
+  }
+  function syncSound() {
+    soundToggle.textContent = muted ? '🔇' : '🔊';
+    soundToggle.setAttribute('aria-pressed', String(muted));
+    soundToggle.title = muted ? '开启桌宠音效' : '关闭桌宠音效';
+  }
   pet.hidden = readStored('pet-hidden', 'false') === 'true';
   let manifest, pose = 'idle', version = 0, frameRequest = 0, blinkTimer = 0;
   const images = new Map();
@@ -96,13 +120,20 @@ export function initPet() {
     } catch { pet.dataset.state = 'error'; retry.hidden = false; }
   }
   character.disabled = true;
-  character.addEventListener('click', () => { pose = nextPose(); show(true); });
+  character.addEventListener('click', () => { pose = nextPose(); playSound(pose); show(true); });
+  soundToggle.addEventListener('click', () => {
+    muted = !muted; writeStored('pet-muted', muted); stopSound(); syncSound();
+  });
   toggle.addEventListener('click', () => {
     pet.hidden = !pet.hidden; writeStored('pet-hidden', pet.hidden); sync();
+    if (pet.hidden) stopSound();
     if (manifest) show();
   });
   retry.addEventListener('click', () => manifest ? show(true) : boot());
-  document.addEventListener('visibilitychange', () => { if (manifest) show(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopSound();
+    if (manifest) show();
+  });
   motion.addEventListener('change', () => { if (manifest) show(); });
-  sync(); boot();
+  syncSound(); sync(); boot();
 }

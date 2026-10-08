@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v9-maid-poses';
+const CACHE_NAME = 'learning-space-v10-pet-sounds';
 
 const STATIC_ASSETS = [
   '/',
@@ -24,6 +24,9 @@ const STATIC_ASSETS = [
   '/js/app.js',
   '/js/cosmos.js',
   '/js/pet.js',
+  '/pet/sounds/jump.mp3',
+  '/pet/sounds/cute.mp3',
+  '/pet/sounds/wave.mp3',
   '/pet/maid/manifest.json',
   '/pet/maid/idle/static.webp',
   '/pet/maid/idle/frames/00.png',

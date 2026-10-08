@@ -11,3 +11,5 @@
 页面不显示版权控件。旧项目 MIT 文本仍保存在 `docs/licenses/dafeiyu-MIT.txt`。
 
 验证：`npm run test:all`；启动开发服务后运行 `PLAYWRIGHT_MODULE=/tmp/pet-runtime/node_modules/playwright-core/index.mjs node tools/test-pet-browser.mjs`。浏览器测试需要 Playwright Core 与 Chromium，可用 `BASE_URL`、`CHROMIUM_PATH` 指定服务和浏览器。
+
+点击音效使用此前试听确认的三段合成 MP3：跳跃啵声、卖萌叮声、招手双音，保存在 `sounds/`。默认开启，以 65% 播放音量播放已降低振幅的素材；静音按钮保存 `pet-muted` 偏好。只在点击角色（含键盘和触屏）时发声，待机眨眼、恢复角色与加载重试不发声。连续点击、静音、收起或页面隐藏时停止旧音效。声音加载或播放被浏览器阻止时不影响动作。
