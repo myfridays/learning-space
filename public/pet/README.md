@@ -1,27 +1,30 @@
-# 仇远网页桌宠
+# 大肥鱼网页桌宠
 
-模型来自用户提供的 `仇远-无表情版.zip`，使用其中 `A-仇远/img/standard/cat_model` 的原始文件。模型、8192px 纹理、物理配置和作者说明均保持原样；素材画面署名为「哔哩哔哩 @宇痕/」。素材版权仍归原作者，此项目不另行授予素材使用权。
+来源：https://github.com/1190fasheqi/dafeiyu-pet
 
-首次打开保留模型内的免费版说明。用户点击「开始陪伴」后，执行素材配置中 Alt+1 对应的 `Paramshuiying` 状态；持续显示作者署名，点击署名可以重新查看模型自带说明。
+参考提交：`5b0e01856116bd2bae82df1f43c32faa5f056196`。
 
-实现参考 https://github.com/vladelaina/BongoCat ，检查版本 `a832ec16b9e29d83affe8a85bd6b6ecd60b8cee7` 的 `src/core/app_state.c`、`src/core/input_state.c` 和 `src/live2d/cubism_model_update.cpp`：按键按下/释放控制动作、鼠标位置映射模型参数、失焦释放输入、按需更新。网页实现为独立 JavaScript，未复制或捆绑该项目的 AGPL 源码。
+上游仓库声明 MIT 许可，原始声明完整保留在 `dafeiyu/LICENSE`。上游 README 将形象描述为 DeepSeek V4 Pro 的二创形象「鲸鱼娘·大肥鱼」；本项目沿用该来源说明，不将形象称为原创，也不将代码开源许可表述成对全部第三方形象权利的保证。
 
-- `public/js/pet.js`：拖拽、触屏、位置记忆、键盘操作、互动、暂停和收起。
-- `public/js/pet-renderer.js`：Live2D 加载、30fps 更新、页内键鼠映射、失焦释放、减少动态效果。
-- 浏览器只能响应当前网页的输入，不监听其他软件。密码框不驱动按键动作；不读取、记录或发送输入内容。
-- 素材含 12.7MB 的原始纹理，首次显示桌宠时才加载。GPU 上传前在内存中缩小至最多 2048px；磁盘素材不变。
-- 收起或页面隐藏时停止渲染；减少动态效果模式保留静态模型和按键状态。加载失败有重试按钮，主应用照常使用。
-- 所有运行库与模型资源均同源托管，无 CDN 请求、无新增构建步骤。现有 Workers 静态资源目录可直接发布。
+素材保持上游原样：
+
+- `sprites/正面_306.png` → `dafeiyu/front.png`
+- `sprites/侧面_306.png` → `dafeiyu/side.png`
+- `sprites/背面_306.png` → `dafeiyu/back.png`
+
+`public/js/pet.js` 参考上游 `桌宠.py` 的三视图朝向、左右镜像、散步休息、跟随鼠标距离、拖拽阈值、单双击区分等行为，改写为浏览器原生 JavaScript；使用 CSS 实现呼吸、走路、摸摸、喂食和跳跃。
+
+默认原地陪伴，可切换自由散步和跟随鼠标。鼠标悬停、焦点处于桌宠控件、拖拽或互动时停止自动移动，方便操作。支持暂停、收起、位置和模式记忆、触屏拖拽、方向键移动、回车互动。减少动态效果时停止动画和自动移动。
+
+旧模型、旧运行库和它们的声明文件已从当前工作树移除；历史 Git 提交未重写。Service Worker 缓存版本已更新，激活新版本时清理旧缓存。此版本无 Live2D/WebGL、CDN、AI API、API Key 或全局键盘监听；仅需三个同源 PNG，无新增依赖或构建步骤。
 
 ## 本地验证
 
-在仓库根目录运行 `npm run dev`，访问本地页面。首次点击「开始陪伴」，在非密码输入框输入 A/S/D 或其他按键，观察手部、键盘响应；移动鼠标观察头部、眼睛和鼠标手跟随。测试摸摸、击键、加油，拖拽和方向键移动，收起/召唤，暂停/继续，刷新后的记忆与手机边界。
-
-运行 `npm run test:all` 验证原有前后端功能。浏览器回归脚本为 `tools/test-pet-browser.mjs`，需要可用的 Chromium 和 Playwright Core（可安装到仓库外）：
+启动 `npm run dev`，运行 `npm run test:all`。浏览器回归脚本：
 
 ```sh
 npm install --prefix /tmp/learning-space-browser playwright-core --cache=/tmp/npm-cache
 PLAYWRIGHT_MODULE=/tmp/learning-space-browser/node_modules/playwright-core/index.mjs node tools/test-pet-browser.mjs
 ```
 
-测试默认访问 `http://127.0.0.1:8787`，可用 `BASE_URL` 覆盖；`CHROMIUM_PATH` 默认 `/usr/bin/chromium`。浏览器脚本不访问或修改业务数据。
+浏览器脚本默认使用 `/usr/bin/chromium` 和 `http://127.0.0.1:8787`，可通过 `CHROMIUM_PATH`、`BASE_URL` 覆盖，不修改业务数据。

@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v4-qiuyuan';
+const CACHE_NAME = 'learning-space-v5-dafeiyu';
 
 const STATIC_ASSETS = [
   '/',
@@ -24,7 +24,9 @@ const STATIC_ASSETS = [
   '/js/app.js',
   '/js/cosmos.js',
   '/js/pet.js',
-  '/js/pet-renderer.js',
+  '/pet/dafeiyu/front.png',
+  '/pet/dafeiyu/side.png',
+  '/pet/dafeiyu/back.png',
   '/js/api.js',
   '/js/util.js',
   '/js/components.js',

@@ -1,136 +1,78 @@
-/** Real browser regression checks. Start npm run dev first; see public/pet/README.md. */
+/** Browser regression for the MIT dafeiyu sprite pet. See public/pet/README.md. */
 import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-core');
-const browser = await chromium.launch({
-  executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium',
-  args: ['--no-sandbox', '--enable-unsafe-swiftshader'],
-});
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
 const base = process.env.BASE_URL || 'http://127.0.0.1:8787';
-const errors = [];
 let passed = 0;
-function check(name, result) { assert.ok(result, name); passed++; console.log(`✓ ${name}`); }
+function check(name, value) { assert.ok(value, name); passed++; console.log(`✓ ${name}`); }
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  page.on('pageerror', e => errors.push(e.message));
-  await page.goto(base);
-  await page.locator('#space-pet[data-state="ready"]').waitFor({ timeout: 60000 });
-  check('Live2D loads with the original material notice', await page.locator('.space-pet__begin').isVisible());
-  await page.locator('.space-pet__begin').click();
-  check('Start button closes the original notice', !(await page.locator('.space-pet__begin').isVisible()));
-
-  // Observe the actual model before Core updates it, without adding production test hooks.
-  await page.evaluate(() => {
-    window.petProbe = { updates: 0, parameters: {} };
-    const proto = PIXI.live2d.Live2DModel.prototype;
-    const original = proto.update;
-    proto.update = function(dt) {
-      if (!this.__testObserved) {
-        this.__testObserved = true;
-        this.internalModel.on('beforeModelUpdate', () => {
-          const params = this.internalModel.coreModel._model.parameters;
-          window.petProbe.updates++;
-          window.petProbe.parameters = Object.fromEntries(params.ids.map((id, i) => [id, params.values[i]]));
-        });
-      }
-      return original.call(this, dt);
-    };
-    const input = document.createElement('input'); input.id = 'pet-test-input';
-    input.style = 'position:fixed;left:5px;top:5px;z-index:9999'; document.body.append(input);
-  });
-  await page.waitForFunction(() => window.petProbe.parameters.Paramshuiying === 1);
-  const character = page.locator('.space-pet__character');
-  for (const action of ['wink', 'type', 'nod']) {
+  const errors = [], requests = [];
+  page.on('pageerror', e => errors.push(e.message)); page.on('request', r => requests.push(r.url()));
+  await page.goto(base); await page.locator('#space-pet[data-state="ready"]').waitFor();
+  const pet = page.locator('#space-pet'), character = page.locator('.space-pet__character'), mode = page.locator('.space-pet__mode select');
+  check('New sprite loads without the previous renderer', await page.evaluate(() => !window.PIXI && !window.Live2DCubismCore));
+  check('Default mode stays in place', await mode.inputValue() === 'stay');
+  for (const action of ['pat', 'feed', 'jump']) {
     await page.locator(`[data-reaction="${action}"]`).click();
-    check(`Interaction ${action}`, await page.locator('#space-pet').getAttribute('data-reaction') === action);
+    check(`Interaction ${action}`, await pet.getAttribute('data-reaction') === action);
   }
+  await character.dblclick(); check('Double click feeds', await pet.getAttribute('data-reaction') === 'feed');
   await page.waitForTimeout(1300);
-  const input = page.locator('#pet-test-input'); await input.focus();
-  await page.keyboard.down('a'); await page.keyboard.down('s');
-  await page.waitForFunction(() => petProbe.parameters.A1 === 1 && petProbe.parameters.S1 === 1);
-  check('Multiple held keys drive their model parameters', true);
-  await page.keyboard.up('a');
-  await page.waitForFunction(() => petProbe.parameters.A1 === 0 && petProbe.parameters.S1 === 1);
-  check('Releasing one key preserves the other held key', true);
-  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
-  await page.waitForFunction(() => petProbe.parameters.S1 === 0 && petProbe.parameters.CatParamLeftHandDown === 0);
-  await page.keyboard.up('s'); check('Blur releases all input', true);
-  await input.evaluate(el => el.type = 'password'); await input.focus(); await page.keyboard.down('a');
-  await page.waitForTimeout(150);
-  check('Password entry does not animate key values', await page.evaluate(() => petProbe.parameters.A1 === 0));
-  await page.keyboard.up('a'); await input.evaluate(el => el.type = 'text');
-  await page.mouse.move(20, 400); await page.waitForTimeout(250);
-  const left = await page.evaluate(() => petProbe.parameters.ParamMouseX);
-  await page.mouse.move(1240, 400); await page.waitForTimeout(250);
-  check('Mouse follows across the page', left < 0 && await page.evaluate(() => petProbe.parameters.ParamMouseX > 0));
-  await page.mouse.down(); await page.waitForFunction(() => petProbe.parameters.ParamMouseLeftDown === 1);
-  await page.mouse.up(); await page.waitForFunction(() => petProbe.parameters.ParamMouseLeftDown === 0);
-  check('Mouse button press and release are reflected', true);
-
+  const before = await pet.boundingBox();
+  await page.mouse.move(before.x+90,before.y+90); await page.mouse.down();
+  await page.mouse.move(480,430,{steps:8});
+  check('Dragging left uses the side view', await pet.getAttribute('data-facing') === 'left');
+  await page.mouse.up();
+  const after = await pet.boundingBox();
+  check('Drag moves without click effects', after.x < before.x-100 && await pet.getAttribute('data-reaction') === null);
+  await page.reload(); await pet.waitFor();
+  check('Drag position survives reload', Math.abs((await pet.boundingBox()).x-after.x)<2);
+  await character.focus(); await page.keyboard.press('ArrowUp');
+  check('Up movement uses back view', await pet.getAttribute('data-facing') === 'back');
+  await page.keyboard.press('ArrowRight'); check('Right movement mirrors side view', await pet.getAttribute('data-facing') === 'right');
+  await page.keyboard.press('Enter'); check('Keyboard activates interaction', await pet.getAttribute('data-reaction') === 'pat');
+  await page.waitForTimeout(1300);
+  await mode.selectOption('follow'); await page.mouse.click(15,400); await page.mouse.move(15,400);
+  const followStart = await pet.boundingBox(); await page.waitForTimeout(700);
+  check('Follow mode moves toward the mouse', (await pet.boundingBox()).x < followStart.x-8);
   await page.locator('[data-action="pause"]').click();
-  const pausedUpdates = await page.evaluate(() => petProbe.updates);
-  await page.waitForTimeout(180);
-  check('Pause stops model updates', await page.evaluate(() => petProbe.updates) === pausedUpdates);
+  const stopped = await pet.boundingBox(); await page.waitForTimeout(300);
+  check('Pause stops walking', Math.abs((await pet.boundingBox()).x-stopped.x)<.1);
+  check('Pause stops sprite animation', await page.locator('.space-pet__sprite').evaluate(el=>getComputedStyle(el).animationName)==='none');
+  await page.reload(); await pet.waitFor();
+  check('Mode and pause persist', await mode.inputValue()==='follow' && await page.locator('[data-action="pause"]').getAttribute('aria-pressed')==='true');
   await page.locator('[data-action="pause"]').click();
-  await page.waitForFunction(count => petProbe.updates > count, pausedUpdates);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  // Media-query change events are delivered after the emulation command returns.
-  await page.waitForTimeout(100);
-  const reducedUpdates = await page.evaluate(() => petProbe.updates);
-  await page.waitForTimeout(180);
-  check('Reduced motion stops continuous model updates', await page.evaluate(() => petProbe.updates) === reducedUpdates);
-  await input.focus(); await page.keyboard.down('a');
-  check('Reduced motion still renders input states', await page.evaluate(() => petProbe.parameters.A1 === 1));
-  await page.keyboard.up('a');
-  check('Reduced motion releases input states', await page.evaluate(() => petProbe.parameters.A1 === 0));
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-
-  const before = await page.locator('#space-pet').boundingBox();
-  await page.mouse.move(before.x + before.width / 2, before.y + 100); await page.mouse.down();
-  await page.mouse.move(430, 420, { steps: 8 }); await page.mouse.up();
-  const after = await page.locator('#space-pet').boundingBox();
-  check('Dragging moves without triggering an interaction', after.x < before.x - 100 && await page.locator('#space-pet').getAttribute('data-reaction') === null);
-  await page.reload(); await page.locator('#space-pet[data-state="ready"]').waitFor({ timeout: 60000 });
-  check('Position persists after reload', Math.abs((await page.locator('#space-pet').boundingBox()).x - after.x) < 2);
-  await character.focus(); await page.keyboard.press('ArrowLeft');
-  check('Keyboard can move the pet', (await page.locator('#space-pet').boundingBox()).x < after.x);
-  await page.keyboard.press('Enter');
-  check('Keyboard can trigger interaction', await page.locator('#space-pet').getAttribute('data-reaction') === 'wink');
-  await page.locator('[data-action="pause"]').click();
-  check('Pause preference updates', await page.locator('#space-pet').getAttribute('data-paused') === 'true');
-  await page.reload(); await page.locator('#space-pet[data-state="ready"]').waitFor({ timeout: 60000 });
-  check('Pause survives refresh', await page.locator('#space-pet').getAttribute('data-paused') === 'true');
-  await page.locator('[data-action="pause"]').click();
+  await mode.selectOption('wander'); await page.mouse.click(15,400);
+  const wanderStart = await pet.boundingBox(); await page.waitForTimeout(650);
+  const wanderEnd = await pet.boundingBox();
+  check('Wander mode walks within viewport', Math.hypot(wanderEnd.x-wanderStart.x,wanderEnd.y-wanderStart.y)>3 && wanderEnd.x>=8 && wanderEnd.x+wanderEnd.width<=1280);
+  await page.emulateMedia({reducedMotion:'reduce'}); await page.waitForTimeout(100);
+  const reduced = await pet.boundingBox(); await page.waitForTimeout(250);
+  check('Reduced motion stops automatic movement', Math.abs((await pet.boundingBox()).x-reduced.x)<.1);
+  await page.locator('[data-reaction="pat"]').click(); check('Reduced motion disables particles', await page.locator('.space-pet__particles span').count()===0);
   await page.locator('[data-action="hide"]').click(); await page.reload();
-  await page.locator('.space-pet-restore').waitFor();
-  check('Hidden pet does not load its runtime', await page.evaluate(() => !window.PIXI));
-  await page.locator('.space-pet-restore').click(); await page.locator('#space-pet[data-state="ready"]').waitFor({ timeout: 60000 });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.locator('[data-reaction="wink"]').click();
-  check('Reduced motion disables particles', await page.locator('.space-pet__particles span').count() === 0);
-  await page.locator('.space-pet__credit').click(); await page.locator('.space-pet__begin').click();
-  check('Material notice can be reopened and dismissed in reduced motion', !(await page.locator('.space-pet__begin').isVisible()));
-  await page.setViewportSize({ width: 390, height: 844 }); await character.focus();
-  for (let i = 0; i < 35; i++) await page.keyboard.press('ArrowRight');
-  for (let i = 0; i < 35; i++) await page.keyboard.press('ArrowDown');
-  const mobile = await page.locator('#space-pet').boundingBox();
-  check('Pet stays within mobile viewport and above bottom navigation', mobile.x + mobile.width <= 390 && mobile.y + mobile.height <= 754);
+  check('Hidden state persists', !(await pet.isVisible()));
+  await page.locator('.space-pet-restore').click(); check('Restore brings back the pet', await pet.isVisible());
+  await mode.selectOption('stay');
+  await page.setViewportSize({width:390,height:844}); await character.focus();
+  for(let i=0;i<40;i++) await page.keyboard.press('ArrowRight');
+  for(let i=0;i<40;i++) await page.keyboard.press('ArrowDown');
+  const mobile = await pet.boundingBox();
+  check('Mobile boundary leaves navigation accessible', mobile.x+mobile.width<=390 && mobile.y+mobile.height<=754);
   const cdp = await page.context().newCDPSession(page);
-  const touch = { x: mobile.x + mobile.width / 2, y: mobile.y + 90 };
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch] });
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 100, y: 240 }] });
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  check('Touch drag moves the pet', (await page.locator('#space-pet').boundingBox()).y < mobile.y - 50);
-  await page.screenshot({ path: '/tmp/qiuyuan-mobile.png' });
-  check('No page script errors', errors.length === 0);
-
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:mobile.x+80,y:mobile.y+70}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:100,y:240}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  check('Touch dragging moves the pet', (await pet.boundingBox()).y<mobile.y-40);
+  await page.screenshot({path:'/tmp/dafeiyu-mobile.png'});
+  check('No old model or vendor requests', !requests.some(url=>/qiuyuan|live2d|pet-renderer/.test(url)));
+  check('No page script errors', errors.length===0);
   const fail = await browser.newPage();
-  await fail.route('**/cat.moc3', route => route.abort());
-  await fail.goto(base); await fail.locator('#space-pet[data-state="error"]').waitFor({ timeout: 60000 });
-  check('Model failure keeps app content usable', await fail.locator('#app').innerText() !== '');
-  check('Model failure offers retry', await fail.locator('.space-pet__retry').isVisible());
-  await fail.unroute('**/cat.moc3'); await fail.locator('.space-pet__retry').click();
-  await fail.locator('#space-pet[data-state="ready"]').waitFor({ timeout: 60000 });
-  check('Retry recovers from a failed model request', true);
-  await fail.close();
-  console.log(`${passed} browser checks passed.`);
+  await fail.route('**/pet/dafeiyu/front.png',r=>r.abort()); await fail.goto(base);
+  await fail.locator('#space-pet[data-state="error"]').waitFor();
+  check('Image failure keeps the main application available', await fail.locator('#app').innerText()!=='');
+  await fail.unroute('**/pet/dafeiyu/front.png'); await fail.locator('.space-pet__retry').click();
+  await fail.locator('#space-pet[data-state="ready"]').waitFor(); check('Image retry recovers', true);
+  await fail.close(); console.log(`${passed} browser checks passed.`);
 } finally { await browser.close(); }
