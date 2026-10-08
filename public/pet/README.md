@@ -1,30 +1,15 @@
-# 大肥鱼网页桌宠
+# 固定角色展示
 
-来源：https://github.com/1190fasheqi/dafeiyu-pet
+当前三张 `companion/*.webp` 以用户在对话中提供的三张角色参考图为基础，通过图像生成工具制作透明底版本，再分帧导出。它们是参考图的生成式改绘，不是原图文件的逐像素复制，也不作为独立原创角色的权利声明。
 
-参考提交：`5b0e01856116bd2bae82df1f43c32faa5f056196`。
+角色固定在右下角：桌面 124×136px、手机 108×118px。每五秒依次切换眨眼、开心、招手姿势，位置不变。没有拖拽、跟随、散步、键盘移动、点击互动或模式选择。鲸鱼按钮切换显示/隐藏并记忆状态。页面不可见、角色隐藏或系统开启减少动态效果时停止姿势轮换。
 
-上游仓库声明 MIT 许可，原始声明完整保留在 `dafeiyu/LICENSE`。上游 README 将形象描述为 DeepSeek V4 Pro 的二创形象「鲸鱼娘·大肥鱼」；本项目沿用该来源说明，不将形象称为原创，也不将代码开源许可表述成对全部第三方形象权利的保证。
+页面不显示版权声明控件。旧版项目来源的 MIT 文本保存在 `docs/licenses/dafeiyu-MIT.txt`，旧角色图片已经移除。Git 历史未改写。
 
-素材保持上游原样：
-
-- `sprites/正面_306.png` → `dafeiyu/front.png`
-- `sprites/侧面_306.png` → `dafeiyu/side.png`
-- `sprites/背面_306.png` → `dafeiyu/back.png`
-
-`public/js/pet.js` 参考上游的三视图朝向、左右镜像、散步休息、跟随鼠标距离和拖拽阈值，以原生 JavaScript 实现。角色尺寸为上一版的三分之一（桌面高度 218/3 px，手机高度 178/3 px）。
-
-角色保留拖拽、方向键移动、位置记忆和三种陪伴模式。模式选择与来源/许可链接独立固定在右下角，不随角色移动。常驻鲸鱼按钮在收起与恢复角色之间切换，状态持久化；收起时控制栏仍可使用。没有点击/双击互动、喂食、跳跃、暂停或减号按钮。减少动态效果时停止自动移动和呼吸动画。
-
-旧模型、旧运行库和它们的声明文件已从当前工作树移除；历史 Git 提交未重写。Service Worker 缓存版本已更新，激活新版本时清理旧缓存。此版本无 Live2D/WebGL、CDN、AI API、API Key 或全局键盘监听；仅需三个同源 PNG，无新增依赖或构建步骤。
-
-## 本地验证
-
-启动 `npm run dev`，运行 `npm run test:all`。浏览器回归脚本：
+验证：`npm run test:all`。启动 `npm run dev` 后运行：
 
 ```sh
-npm install --prefix /tmp/learning-space-browser playwright-core --cache=/tmp/npm-cache
-PLAYWRIGHT_MODULE=/tmp/learning-space-browser/node_modules/playwright-core/index.mjs node tools/test-pet-browser.mjs
+PLAYWRIGHT_MODULE=/tmp/pet-runtime/node_modules/playwright-core/index.mjs node tools/test-pet-browser.mjs
 ```
 
-浏览器脚本默认使用 `/usr/bin/chromium` 和 `http://127.0.0.1:8787`，可通过 `CHROMIUM_PATH`、`BASE_URL` 覆盖，不修改业务数据。
+浏览器测试需要 Playwright Core 与 Chromium。可用 `BASE_URL`、`CHROMIUM_PATH` 覆盖本地默认值。
