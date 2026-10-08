@@ -1,0 +1,105 @@
+{
+  "canvas": {
+    "width": 512,
+    "height": 512
+  },
+  "anchor": {
+    "x": 256,
+    "y": 472
+  },
+  "default": "idle",
+  "clickOrder": [
+    "jump",
+    "cute",
+    "wave"
+  ],
+  "loopCount": 1,
+  "actions": {
+    "idle": {
+      "static": "idle/static.webp",
+      "frames": [
+        "idle/frames/00.png",
+        "idle/frames/01.png",
+        "idle/frames/02.png",
+        "idle/frames/03.png",
+        "idle/frames/04.png"
+      ],
+      "durationsMs": [
+        100,
+        80,
+        120,
+        80,
+        100
+      ],
+      "durationMs": 480,
+      "loopCount": 1
+    },
+    "jump": {
+      "static": "jump/static.webp",
+      "frames": [
+        "jump/frames/00.png",
+        "jump/frames/01.png",
+        "jump/frames/02.png",
+        "jump/frames/03.png",
+        "jump/frames/04.png",
+        "jump/frames/05.png"
+      ],
+      "durationsMs": [
+        140,
+        120,
+        120,
+        160,
+        140,
+        200
+      ],
+      "durationMs": 880,
+      "loopCount": 1
+    },
+    "cute": {
+      "static": "cute/static.webp",
+      "frames": [
+        "cute/frames/00.png",
+        "cute/frames/01.png",
+        "cute/frames/02.png",
+        "cute/frames/03.png",
+        "cute/frames/04.png",
+        "cute/frames/05.png",
+        "cute/frames/06.png"
+      ],
+      "durationsMs": [
+        140,
+        140,
+        180,
+        220,
+        140,
+        140,
+        180
+      ],
+      "durationMs": 1140,
+      "loopCount": 1
+    },
+    "wave": {
+      "static": "wave/static.webp",
+      "frames": [
+        "wave/frames/00.png",
+        "wave/frames/01.png",
+        "wave/frames/02.png",
+        "wave/frames/03.png",
+        "wave/frames/04.png",
+        "wave/frames/05.png",
+        "wave/frames/06.png"
+      ],
+      "durationsMs": [
+        140,
+        140,
+        140,
+        140,
+        140,
+        140,
+        180
+      ],
+      "durationMs": 1020,
+      "loopCount": 1
+    }
+  }
+}

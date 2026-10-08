@@ -1298,4 +1298,4 @@ html[data-theme="dark"] .brand__mark { color: #fff; }
 
 .space-pet__character { display: block; width: 100%; height: 100%; padding: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .space-pet__character:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 16px; }
-.space-pet__image { pointer-events: none; clip-path: inset(0 0 0 8%); }
+.space-pet__image { pointer-events: none; }

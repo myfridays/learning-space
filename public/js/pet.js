@@ -1,10 +1,10 @@
 import { readStored, writeStored } from './util.js';
 
-// Fixed, click-to-cycle animated companion. Asset provenance: /pet/README.md.
+// Original uploaded assets and playback details: /pet/README.md.
 export function initPet() {
   if (document.getElementById('space-pet') || typeof document.createElement('canvas').getContext !== 'function') return;
-  const poses = [ { file: 'wave', label: '招手' }, { file: 'jump', label: '跳跃' }, { file: 'blink', label: '眨眼' } ];
-  let pose = 0;
+  const base = '/pet/maid/';
+  const labels = { idle: '待机', jump: '跳跃', cute: '卖萌', wave: '招手' };
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const pet = document.createElement('aside');
   pet.id = 'space-pet'; pet.className = 'space-pet'; pet.setAttribute('aria-label', '桌宠');
@@ -17,29 +17,92 @@ export function initPet() {
   const toggle = dock.querySelector('.space-pet-toggle'), retry = dock.querySelector('.space-pet__retry');
   const character = pet.querySelector('button'), sprite = pet.querySelector('img');
   pet.hidden = readStored('pet-hidden', 'false') === 'true';
-  function source() {
-    const folder = pet.hidden || document.hidden || motion.matches ? 'still' : 'animated';
-    return `/pet/companion/${folder}/${poses[pose].file}.webp`;
+  let manifest, pose = 'idle', version = 0, frameRequest = 0, blinkTimer = 0;
+  const images = new Map();
+  function preload(path) {
+    if (!images.has(path)) {
+      const img = new Image(); img.src = base + path;
+      const promise = img.decode().then(() => img).catch(error => { images.delete(path); throw error; });
+      images.set(path, promise);
+    }
+    return images.get(path);
+  }
+  function canAnimate() { return !pet.hidden && !document.hidden && !motion.matches; }
+  function nextPose() {
+    const order = manifest?.clickOrder || ['jump', 'cute', 'wave'];
+    return order[(order.indexOf(pose) + 1) % order.length];
   }
   function sync() {
     toggle.setAttribute('aria-expanded', String(!pet.hidden));
     const label = pet.hidden ? '恢复桌宠' : '收起桌宠';
     toggle.setAttribute('aria-label', label); toggle.title = label;
-    pet.dataset.pose = poses[pose].file;
-    const hint = `当前${poses[pose].label}，点击切换为${poses[(pose + 1) % poses.length].label}`;
+    pet.dataset.pose = pose;
+    const hint = `当前${labels[pose]}，点击切换为${labels[nextPose()]}`;
     character.setAttribute('aria-label', hint); character.title = hint;
-    if (sprite.getAttribute('src') !== source()) {
-      pet.dataset.state = 'loading'; retry.hidden = true; sprite.src = source();
+  }
+  function cancel() {
+    version++; cancelAnimationFrame(frameRequest); clearTimeout(blinkTimer);
+    pet.dataset.playback = 'static';
+    return version;
+  }
+  function scheduleBlink() {
+    clearTimeout(blinkTimer);
+    if (pose === 'idle' && canAnimate()) blinkTimer = setTimeout(() => show(true), 4000 + Math.random() * 2000);
+  }
+  async function show(animate = false) {
+    const ticket = cancel(); sync();
+    pet.dataset.state = 'loading'; retry.hidden = true;
+    try {
+      const action = manifest.actions[pose];
+      const still = await preload(action.static);
+      if (ticket !== version) return;
+      // Keep the previous decoded image visible until the new pose is ready.
+      sprite.src = still.src;
+      pet.dataset.state = 'ready';
+      if (!animate || !canAnimate()) { scheduleBlink(); return; }
+      const frames = await Promise.all(action.frames.map(preload));
+      if (ticket !== version || !canAnimate()) return;
+      pet.dataset.playback = 'playing';
+      let started, previous = -1;
+      function tick(now) {
+        if (ticket !== version) return;
+        started ??= now;
+        const elapsed = now - started;
+        if (elapsed >= action.durationMs) {
+          sprite.src = still.src; pet.dataset.playback = 'static'; scheduleBlink(); return;
+        }
+        let index = 0, end = action.durationsMs[0];
+        while (index < frames.length - 1 && elapsed >= end) end += action.durationsMs[++index];
+        if (index !== previous) { sprite.src = frames[index].src; previous = index; }
+        frameRequest = requestAnimationFrame(tick);
+      }
+      frameRequest = requestAnimationFrame(tick);
+    } catch {
+      if (ticket !== version) return;
+      pet.dataset.state = 'error'; pet.dataset.playback = 'static'; retry.hidden = false;
     }
   }
-  character.addEventListener('click', () => { pose = (pose + 1) % poses.length; sync(); });
+  async function boot() {
+    retry.hidden = true; pet.dataset.state = 'loading';
+    try {
+      const response = await fetch(base + 'manifest.json');
+      if (!response.ok) throw new Error('Pet assets unavailable');
+      manifest = await response.json();
+      character.disabled = false;
+      await show();
+      // Warm the next action without blocking the initial still or surfacing optional preload errors.
+      const next = manifest.actions[nextPose()];
+      Promise.all([next.static, ...next.frames].map(preload)).catch(() => {});
+    } catch { pet.dataset.state = 'error'; retry.hidden = false; }
+  }
+  character.disabled = true;
+  character.addEventListener('click', () => { pose = nextPose(); show(true); });
   toggle.addEventListener('click', () => {
     pet.hidden = !pet.hidden; writeStored('pet-hidden', pet.hidden); sync();
+    if (manifest) show();
   });
-  sprite.addEventListener('load', () => { pet.dataset.state = 'ready'; retry.hidden = true; });
-  sprite.addEventListener('error', () => { pet.dataset.state = 'error'; retry.hidden = false; });
-  retry.addEventListener('click', () => { pet.dataset.state = 'loading'; sprite.src = source(); });
-  document.addEventListener('visibilitychange', sync);
-  motion.addEventListener('change', sync);
-  sync();
+  retry.addEventListener('click', () => manifest ? show(true) : boot());
+  document.addEventListener('visibilitychange', () => { if (manifest) show(); });
+  motion.addEventListener('change', () => { if (manifest) show(); });
+  sync(); boot();
 }
