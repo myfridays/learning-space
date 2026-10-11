@@ -53,29 +53,24 @@
 	"vars": {
 		// 文档存储总容量上限（字节）。8 GiB = 8589934592
 		"STORAGE_QUOTA_BYTES": "8589934592"
-	}
+	},
 
 	// ── 绑定自定义域名 ──────────────────────────────────────────
 	//
 	// 为什么需要：*.workers.dev 在国内可达性很差（社区反馈是被墙的）。
 	// 绑一个自己的域名就能解决「打不开」的问题。
 	//
-	// 用法：把下面的注释取消，把域名换成你自己的（比如从 dpdns.org / gv.uy
-	// 申请的免费子域名），然后重新 `npx wrangler deploy`。
+	// custom_domain: true 表示让 Cloudflare 自动创建 DNS 记录并签发证书，
+	// 不需要你手动去 DNS 页面加 A 记录。
+	"routes": [{ "pattern": "hyh.dpdns.org", "custom_domain": true }]
+
+	// ── 备用：想自己做「优选 IP」时改用这种方式 ──────────────────
 	//
-	// ⚠️ 前提：这个域名必须已经作为「站点」添加到你的 Cloudflare 账号，
-	//    并且状态是 Active（NS 已指向 Cloudflare）。
-	//    免费子域名能不能加进 Cloudflare，取决于它的根域有没有被 PSL 收录。
+	// 优点：DNS 记录的类型和值由你自己控制，可以指向优选出来的 IP。
+	// 代价：需要你手动在 Cloudflare 的 DNS 页面建一条记录。
+	//       详见 DEPLOY.md 第十节。
 	//
-	// 方式一：Custom Domain（最简单，推荐先用这个）
 	// "routes": [
-	//   { "pattern": "notes.你的域名", "custom_domain": true }
-	// ],
-	//
-	// 方式二：Worker Route（要自己做优选 IP 时用这个，
-	//        因为它允许你自己控制 DNS 记录的类型和值）
-	//   之后还需要在 Cloudflare 的 DNS 页面自己建一条记录
-	// "routes": [
-	//   { "pattern": "notes.你的域名/*", "zone_name": "你的域名" }
+	//   { "pattern": "hyh.dpdns.org/*", "zone_name": "hyh.dpdns.org" }
 	// ],
 }
