@@ -1,0 +1,34 @@
+/* Keep the original square artwork; scroll long content inside the frame. */
+.village-panel {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+  aspect-ratio: 1;
+}
+.village-panel__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.village-panel__content {
+  position: absolute;
+  overflow: auto;
+  box-sizing: border-box;
+  font: 14px/1.6 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.village-panel[data-kind="mindfulness"] .village-panel__content {
+  inset: 30% 19% 29%; color: #49301c;
+}
+.village-panel[data-kind="fitness"] .village-panel__content {
+  inset: 26% 20% 32%; color: #242431;
+}
+.village-panel[data-kind="todos"] .village-panel__content {
+  inset: 38% 17% 24%; color: #fff3d7;
+}
+.village-panel[data-kind="settings"] .village-panel__content {
+  inset: 25% 22% 27%; color: #382416;
+}

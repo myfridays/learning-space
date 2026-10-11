@@ -1,0 +1,43 @@
+/* Keep supplied frame proportions and safe insets, with readable fixed artwork colours. */
+.pixel-space .village-panel { padding:0; border:0; box-shadow:none; background:transparent; display:block; width:640px; max-width:100%; margin:0 auto 20px; }
+.pixel-space .village-panel__frame { max-width:none; }
+.pixel-space .village-panel__content { --text:#382416; --text-2:#604a35; --text-3:#70593e; --bg:#f5e3b8; --surface:#ffefce; --border:#b79b63; --border-strong:#927441; --accent:#654421; --accent-soft:#e4c990; --danger:#9f2525; overscroll-behavior:contain; scrollbar-width:thin; font-family:inherit; padding:2px; }
+.pixel-space .village-panel[data-kind="fitness"] .village-panel__content { --text:#242431; --text-2:#434351; --text-3:#515161; --bg:#e0e0e0; --surface:#ededed; --border:#a7a0b3; --border-strong:#6b6479; --accent:#65427e; --accent-soft:#d9cce4; }
+.pixel-space .village-panel[data-kind="todos"] .village-panel__content { --text:#fff3d7; --text-2:#f3dfb4; --text-3:#ebd09b; --bg:#755335; --surface:#775234; --border:#b78f55; --border-strong:#d2b477; --accent:#fff0ac; --accent-soft:#936e42; }
+.village-panel__content .entry-menu { float:right; margin-top:8px; }
+.village-panel__content .entry-menu>div { position:static; }
+.village-panel__content .entry-content { width:100%; }
+.pixel-space .quote-entry blockquote { font-size:18px; line-height:1.8; margin:0 0 14px; }
+.pixel-space .workout-entry h3 { font-size:19px; }
+.pixel-space .village-panel .setting-row { gap:8px; margin:12px 0; }
+.pixel-space .village-panel .setting-row select { max-width:65%; }
+.pixel-space .village-panel .inline-edit { flex-wrap:wrap; }
+.pixel-space .village-panel .inline-edit input { flex:1 1 100px; }
+.pixel-space .village-panel .settings-section { margin:0; }
+.pixel-space .village-panel h2 { font-size:17px; margin-bottom:16px; }
+.pixel-space .village-panel .weather-source { display:inline-block; margin-top:10px; }
+.pixel-space .village-panel .form-actions { gap:12px; }
+.pixel-space .village-panel .city-option { flex-wrap:wrap; }
+.pixel-space .village-panel .today-task { flex-wrap:wrap; gap:8px; padding:12px 0; }
+.pixel-space .village-panel .today-task>span { flex:1 1 90px; }
+.pixel-space .village-panel .today-task .entry-menu { margin:0; }
+.pixel-space .village-panel .pixel-empty { color:inherit; padding:20px 4px; }
+.pixel-space .village-panel .task-group { margin:14px 0; }
+.pixel-space .settings-section.village-panel .village-panel__content>small { display:block; margin-top:12px; font-size:11px; }
+@media(max-width:720px) {
+ .pixel-space .village-panel { width:320px; }
+ .pixel-space .village-panel__content { font-size:12px; line-height:1.65; }
+ .pixel-space .quote-entry blockquote { font-size:14px; line-height:1.7; }
+ .pixel-space .workout-entry h3,.pixel-space .village-panel h2 { font-size:14px; }
+ .pixel-space .village-panel .workout-metrics { gap:8px; font-size:12px; margin-top:8px; }
+ .pixel-space .village-panel .setting-row { font-size:12px; flex-wrap:wrap; }
+ .pixel-space .village-panel .setting-row select { padding:6px; }
+ .pixel-space .village-panel .btn { font-size:12px; padding:5px 8px; min-height:34px; }
+ .pixel-space .village-panel .legacy-links { gap:12px; font-size:12px; }
+ .pixel-space .village-panel input:not([type=checkbox]) { padding:6px; }
+ .pixel-space .village-panel .quote-meta { font-size:10px; gap:6px; }
+ .pixel-space .village-panel .entry-menu summary { line-height:24px; font-size:18px; }
+}
+/* Gold frame's top gear extends below the supplied guide; keep headings below it. */
+.pixel-space .village-panel[data-kind="settings"] .village-panel__content { inset:34% 22% 25% 23%; --text-2:#48311b; --text-3:#4e361f; }
+.pixel-space .village-panel[data-kind="fitness"] .village-panel__content { --text-2:#232326; --text-3:#29262f; --accent:#302036; }

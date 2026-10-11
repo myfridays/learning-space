@@ -1,3 +1,4 @@
+import { applyPanels } from '../panels.js';
 import { api } from '../api.js';
 import { esc, localToday } from '../util.js';
 const drafts = new Map();
@@ -18,6 +19,7 @@ export async function lifeView(el, app, kind) {
   function reset(){form.reset();field('id').value='';if(fitness)field('day').value=localToday();form.querySelector('#cancel-edit').hidden=true;form.hidden=fitness;drafts.delete(kind);form.querySelector('[role=alert]').textContent='';form.querySelector('[type=submit]').textContent=fitness?'保存记录':'记录';}
   function draw(){
     list.innerHTML=items.length?items.map((item,i)=>`${fitness && (i===0 || items[i-1].day!==item.day)?`<h2 class="timeline-day">${esc(item.day)}</h2>`:''}<article class="${fitness?'workout-entry':'quote-entry'}" data-id="${esc(item.id)}"><div class="entry-content">${fitness?`<h3>${esc(item.content)}</h3><div class="workout-metrics">${[item.duration?`${item.duration} 分钟`:'',item.distance?`${item.distance} 公里`:'',item.sets?`${item.sets} 组`:''].filter(Boolean).map(v=>`<span>${esc(v)}</span>`).join('')}</div>${item.note?`<p>${esc(item.note)}</p>`:''}`:`<blockquote>${esc(item.content)}</blockquote><div class="quote-meta"><time>${esc(item.day)}</time>${item.source?`<span>— ${esc(item.source)}</span>`:''}</div>`}</div><details class="entry-menu"><summary aria-label="记录操作">⋯</summary><div><button type="button" data-edit="${esc(item.id)}">编辑</button><button type="button" data-delete="${esc(item.id)}">删除</button></div></details></article>`).join(''):`<p class="pixel-empty">${fitness?'还没有健身记录':'还没有记录，写下第一句吧。'}</p>`;
+    applyPanels(list, fitness ? '.workout-entry' : '.quote-entry', kind);
     if(fitness)root.querySelector('datalist').innerHTML=[...new Set(items.map(i=>i.content))].slice(0,12).map(v=>`<option value="${esc(v)}">`).join('');
     more.hidden=!hasMore;
   }
