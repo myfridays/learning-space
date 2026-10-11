@@ -8,7 +8,7 @@ export async function pixelSettingsView(el,app){
  applyPanels(el, '.settings-section', 'settings');
  const root=el.firstElementChild,theme=root.querySelector('#theme-choice');theme.value=readStored('theme-mode','dark');
  theme.addEventListener('change',()=>app.setThemeMode(theme.value));
- root.querySelector('#show-pet').addEventListener('change',e=>{const hidden=readStored('pet-hidden','false')==='true';if(hidden===e.target.checked)document.querySelector('.space-pet-toggle')?.click();});
+ root.querySelector('#show-pet').addEventListener('change',e=>{writeStored('pet-hidden',String(!e.target.checked));window.dispatchEvent(new Event('pet-visibility-change'));});
  root.querySelector('#pet-audio').addEventListener('change',e=>{writeStored('pet-muted',String(!e.target.checked));window.dispatchEvent(new Event('pet-sound-change'));});
  root.querySelector('#city-form').addEventListener('submit',async e=>{
  e.preventDefault();const button=e.target.querySelector('button'),results=root.querySelector('#city-results'),error=root.querySelector('#city-error');button.disabled=true;error.textContent='';results.innerHTML='';

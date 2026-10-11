@@ -1,4 +1,4 @@
-import { readStored, writeStored } from './util.js';
+import { readStored } from './util.js';
 
 // Original uploaded assets and playback details: /pet/README.md.
 export function initPet() {
@@ -12,10 +12,9 @@ export function initPet() {
   pet.innerHTML = '<button type="button" class="space-pet__character"><img class="space-pet__image" alt="蓝发小伙伴" draggable="false"></button><span class="space-pet__status" role="status">加载中…</span>';
   const dock = document.createElement('div');
   dock.className = 'space-pet-dock';
-  dock.innerHTML = `<button type="button" class="space-pet-toggle" aria-controls="space-pet">🐋</button>
-    <button type="button" class="space-pet__retry" hidden>重新加载角色</button>`;
+  dock.innerHTML = `<button type="button" class="space-pet__retry" hidden>重新加载角色</button>`;
   document.body.append(pet, dock);
-  const toggle = dock.querySelector('.space-pet-toggle'), retry = dock.querySelector('.space-pet__retry');
+  const retry = dock.querySelector('.space-pet__retry');
   const character = pet.querySelector('button'), sprite = pet.querySelector('img');
   const status = pet.querySelector('.space-pet__status');
   function setState(state) {
@@ -56,9 +55,6 @@ export function initPet() {
     return order[(order.indexOf(pose) + 1) % order.length];
   }
   function sync() {
-    toggle.setAttribute('aria-expanded', String(!pet.hidden));
-    const label = pet.hidden ? '恢复桌宠' : '收起桌宠';
-    toggle.setAttribute('aria-label', label); toggle.title = label;
     pet.dataset.pose = pose;
     const hint = `当前${labels[pose]}，点击切换为${labels[nextPose()]}`;
     character.setAttribute('aria-label', hint); character.title = hint;
@@ -121,8 +117,8 @@ export function initPet() {
   }
   character.disabled = true;
   character.addEventListener('click', () => { pose = nextPose(); playSound(pose); show(true); });
-  toggle.addEventListener('click', () => {
-    pet.hidden = !pet.hidden; writeStored('pet-hidden', pet.hidden); sync();
+  window.addEventListener('pet-visibility-change', () => {
+    pet.hidden = readStored('pet-hidden', 'false') === 'true'; sync();
     if (pet.hidden) stopSound();
     if (manifest) show();
   });

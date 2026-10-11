@@ -17,6 +17,7 @@ try{
  if(me.authEnabled){await page.locator('#password').fill(loadDevVars(resolve('.')).APP_PASSWORD);await page.locator('#loginBtn').click();}
  await page.locator('.village-map').waitFor();
  check('五栏导航与建筑入口',await page.locator('#nav a').allTextContents().then(a=>a.join(',')==='首页,正念,健身,待办,设置')&&await page.locator('.village-building').count()===5);
+ check('已移除悬浮鲸鱼按钮',await page.locator('.space-pet-toggle').count()===0);
  check('首页时钟存在且没有星空循环',/\d{2}:\d{2}/.test(await page.locator('#village-time').textContent())&&await page.locator('#cosmos').count()===0);
  await page.screenshot({path:'/tmp/village-desktop.png',fullPage:true});
  await page.locator('.building-mindfulness').click();

@@ -17,7 +17,7 @@ try {
     };
   });
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:8787');
-  const character = page.locator('.space-pet__character'), toggle = page.locator('.space-pet-toggle');
+  const character = page.locator('.space-pet__character');
   await page.locator('#space-pet[data-state="ready"]').waitFor();
   await page.waitForFunction(() => document.querySelector('#space-pet').dataset.playback === 'playing');
   check('Automatic idle blink is silent', await page.evaluate(() => petAudioCalls.length === 0));
@@ -40,9 +40,9 @@ try {
   await character.focus(); await page.keyboard.press('Enter');
   await page.waitForFunction(() => petAudioPlayers.some(audio => !audio.paused && audio.currentTime > 0));
   check('Keyboard activation plays sound', await page.evaluate(() => petAudioCalls.at(-1).endsWith('/jump.mp3')));
-  await toggle.click();
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); });
   check('Hiding stops sound', await page.evaluate(() => petAudioPlayers.every(audio => audio.paused)));
-  await toggle.click(); await character.click();
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); }); await character.click();
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
   check('Backgrounding stops sound', await page.evaluate(() => petAudioPlayers.every(audio => audio.paused)));
   await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); HTMLMediaElement.prototype.play = () => Promise.reject(new DOMException('Blocked', 'NotAllowedError')); });

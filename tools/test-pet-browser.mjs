@@ -8,7 +8,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   const url = new URL('/admin.html', process.env.BASE_URL || 'http://127.0.0.1:8787').href;
   await page.goto(url);
-  const pet = page.locator('#space-pet'), character = page.locator('.space-pet__character'), image = page.locator('.space-pet__image'), toggle = page.locator('.space-pet-toggle');
+  const pet = page.locator('#space-pet'), character = page.locator('.space-pet__character'), image = page.locator('.space-pet__image');
   const waitState = async (pose, playback) => page.waitForFunction(({ pose, playback }) => {
     const el = document.querySelector('#space-pet');
     return el.dataset.pose === pose && el.dataset.playback === playback && el.dataset.state === 'ready';
@@ -35,9 +35,9 @@ try {
   check('Space advances once', await pet.getAttribute('data-pose') === 'jump');
   await page.keyboard.press('ArrowLeft'); await page.mouse.move(20, 20);
   check('Position stays fixed', JSON.stringify(await pet.boundingBox()) === JSON.stringify(rect));
-  await toggle.click(); await waitState('jump', 'static');
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); }); await waitState('jump', 'static');
   check('Hide cancels playback', !(await pet.isVisible()) && (await image.getAttribute('src')).endsWith('/jump/static.webp'));
-  await toggle.click(); await waitState('jump', 'static');
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); }); await waitState('jump', 'static');
   check('Restore preserves static pose', await pet.isVisible());
   await character.click(); await waitState('cute', 'playing');
   await page.emulateMedia({ reducedMotion: 'reduce' }); await waitState('cute', 'static');
@@ -53,9 +53,9 @@ try {
   await waitState('jump', 'playing'); await waitState('jump', 'static');
   check('Touch advances once', await pet.getAttribute('data-pose') === 'jump');
   await page.screenshot({ path: '/tmp/maid-pet-mobile.png' });
-  await toggle.click(); await page.reload(); await waitState('idle', 'static');
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); }); await page.reload(); await waitState('idle', 'static');
   check('Hidden preference survives reload', !(await pet.isVisible()));
-  await toggle.click();
+  await page.evaluate(() => { localStorage.setItem('pet-hidden', String(localStorage.getItem('pet-hidden') !== 'true')); window.dispatchEvent(new Event('pet-visibility-change')); });
   // Fail a non-preloaded pose, then verify retry and stale async-load cancellation.
   await page.route('**/maid/cute/frames/*.png', route => route.abort());
   await character.click(); await character.click();
