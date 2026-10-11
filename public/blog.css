@@ -7,7 +7,7 @@
 .blog-brand span { color:var(--accent); font-size:32px; }
 .blog-header nav { display:flex; gap:28px; align-items:center; font-size:14px; color:var(--text-2); }
 .blog-header [aria-current] { color:var(--accent); }
-#blog-theme { width:36px; height:36px; font-size:24px; border:1px solid var(--border); border-radius:50%; }
+#blog-theme { width:36px; height:36px; font-size:24px; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .blog-main { min-height:65vh; padding-bottom:80px; }
 .blog-intro { position:relative; padding:86px 0 72px; border-bottom:1px solid var(--border); margin-bottom:48px; }
 .eyebrow { font-size:11px; font-weight:600; letter-spacing:.19em; color:var(--accent); }
