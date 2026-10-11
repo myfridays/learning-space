@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v15-readable-panels';
+const CACHE_NAME = 'learning-space-v16-training-log';
 
 const STATIC_ASSETS = [
   '/admin.html',
@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   '/js/panels.js',
   '/js/views/village.js',
   '/js/views/life.js',
+  '/js/views/fitness.js',
   '/js/views/today.js',
   '/js/views/pixel-settings.js',
   '/js/blog.js',

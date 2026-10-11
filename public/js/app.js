@@ -13,6 +13,7 @@ import { $, readStored, toast, writeStored } from './util.js';
 import { loginView } from './views/login.js';
 import { villageView } from './views/village.js';
 import { lifeView } from './views/life.js';
+import { fitnessView } from './views/fitness.js';
 import { todayView } from './views/today.js';
 import { pixelSettingsView } from './views/pixel-settings.js';
 import { noteEditorView, notesListView } from './views/notes.js';
@@ -212,7 +213,8 @@ async function renderRoute() {
     if (!first) {
       await villageView(view, app);
     } else if (first === 'mindfulness' || first === 'fitness') {
-      await lifeView(view, app, first);
+      if (first === 'fitness') await fitnessView(view, app);
+      else await lifeView(view, app, first);
     } else if (first === 'notes' && !second) {
       await notesListView(view, app);
     } else if (first === 'notes' && second) {

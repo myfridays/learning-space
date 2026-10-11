@@ -14,12 +14,34 @@ function clean(kind: string, body: Record<string,unknown>) {
   if(kind==='mindfulness')details.source=str(body.source,'source',{max:200}).trim();
   else {
     details.note=str(body.note,'note',{max:2000}).trim();
+    const category=body.category == null ? '' : str(body.category,'category',{max:20});
+    if(category && !['chest','legs','shoulders','back','cardio'].includes(category))throw badRequest('训练类型无效');
+    details.category=category;
+    for(const [name,max] of [['weight',2000],['speed',100],['incline',100]] as const) {
+      const value=body[name];
+      if(value===null || value===undefined || value===''){details[name]=null;continue;}
+      if(!['string','number'].includes(typeof value)||!Number.isFinite(Number(value))||Number(value)<0||Number(value)>max)throw badRequest(`${name} 数值无效`);
+      details[name]=Number(value);
+    }
+
     for(const name of ['duration','distance','sets']) {
       const value=body[name];
       if(value===null || value===undefined || value===''){details[name]=null;continue;}
       const n=Number(value),max=name==='duration'?1440:name==='distance'?1000:1000;
       if(!Number.isFinite(n)||n<=0||n>max||(name==='sets'&&!Number.isInteger(n)))throw badRequest(`${name} 数值无效`);
       details[name]=n;
+    }
+  }
+  if(kind==='fitness') {
+    const strength=details.category && details.category!=='cardio';
+    if(strength) {
+      if(details.weight===null||!details.sets||Number(details.sets)>50)throw badRequest('请填写重量和组数（1–50）');
+      if(!Array.isArray(body.reps)||body.reps.length!==details.sets||body.reps.some(n=>typeof n!=='number'||!Number.isInteger(n)||n<1||n>1000))throw badRequest('请为每组填写有效次数');
+      details.reps=body.reps;
+      details.duration=null;details.distance=null;details.speed=null;details.incline=null;
+    } else if(details.category==='cardio') {
+      if(!details.duration)throw badRequest('请填写有氧时间');
+      details.weight=null;details.sets=null;details.reps=[];
     }
   }
   return {content,day,details:JSON.stringify(details)};
