@@ -7,9 +7,9 @@ export function loginView(el, app) {
   el.innerHTML = `
     <div class="login-wrap">
       <form class="login" id="loginForm" autocomplete="on">
-        <div class="login__mark">📚</div>
-        <h1 class="login__title">学习空间</h1>
-        <p class="login__sub">输入密码以访问你的笔记</p>
+        <img class="pixel-login-house" src="/village/buildings/square.png" alt="">
+        <h1 class="login__title">生活村庄</h1>
+        <p class="login__sub">输入密码，回到自己的小天地</p>
 
         <div id="loginError" hidden></div>
 

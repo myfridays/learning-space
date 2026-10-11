@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+import { createD1, applyMigrations } from './lib/d1.mjs';
+import { createR2 } from './lib/r2.mjs';
+import worker from '../worker/index.ts';
+const dir=mkdtempSync(join(tmpdir(),'life-api-')),file=join(dir,'db.sqlite');let db=createD1(file);applyMigrations(db,resolve('migrations'));
+const env={DB:db,BUCKET:createR2(join(dir,'r2')),APP_PASSWORD:'test-only-password',AUTH_SECRET:'test-only-secret'};
+let cookie='',count=0;
+async function call(method,path,body,auth=true){const response=await worker.fetch(new Request('http://local'+path,{method,headers:{'content-type':'application/json',...(auth&&cookie?{cookie}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})}),env);return {response,status:response.status,data:await response.json()};}
+function check(label,ok){assert.ok(ok,label);count++;console.log(`✓ ${label}`);}
+const originalFetch=globalThis.fetch;
+try{
+ check('正念接口保护隐私',(await call('GET','/api/life/mindfulness',undefined,false)).status===401);
+ const login=await call('POST','/api/auth/login',{password:env.APP_PASSWORD});cookie=login.response.headers.get('set-cookie').split(';')[0];
+ let quote=(await call('POST','/api/life/mindfulness',{content:'认真感受当下',source:'自己',day:'2026-10-10'})).data.item;
+ check('创建正念',quote.content==='认真感受当下');
+ check('空内容不保存',(await call('POST','/api/life/mindfulness',{content:' ',day:'2026-10-10'})).status===400);
+ check('无效日期不保存',(await call('POST','/api/life/mindfulness',{content:'测试',day:'2026-02-30'})).status===400);
+ quote=(await call('PATCH','/api/life/mindfulness/'+quote.id,{content:'修改后'})).data.item;
+ check('编辑保留原日期与出处',quote.day==='2026-10-10'&&quote.source==='自己');
+ let workout=(await call('POST','/api/life/fitness',{content:'跑步',day:'2026-10-11',duration:30,distance:5,sets:null,note:'轻松'})).data.item;
+ check('健身记录存储数值',workout.duration===30&&workout.distance===5&&workout.note==='轻松');
+ check('组数校验',(await call('PATCH','/api/life/fitness/'+workout.id,{sets:2.5})).status===400);
+ check('负数校验',(await call('PATCH','/api/life/fitness/'+workout.id,{distance:-1})).status===400);
+ check('不能跨类型修改',(await call('PATCH','/api/life/mindfulness/'+workout.id,{content:'oops'})).status===404);
+ await call('DELETE','/api/life/mindfulness/'+quote.id);
+ check('删除后不显示',(await call('GET','/api/life/mindfulness')).data.items.length===0);
+ check('删除后不导出',(await call('GET','/api/data/export')).data.lifeEntries.every(e=>e.id!==quote.id));
+ await call('PATCH','/api/life/mindfulness/'+quote.id,{restore:true});
+ check('撤销恢复原记录',(await call('GET','/api/life/mindfulness')).data.items[0].id===quote.id);
+ const older=(await call('POST','/api/life/fitness',{content:'力量',day:'2026-09-01',sets:3})).data.item;
+ const page=(await call('GET','/api/life/fitness?limit=1')).data;
+ check('时间轴倒序与分页',page.items[0].id===workout.id&&page.hasMore);
+ check('下一页正确',(await call('GET','/api/life/fitness?limit=1&offset=1')).data.items[0].id===older.id);
+ db.close();db=createD1(file);env.DB=db;
+ check('重启后记录持久保存',(await call('GET','/api/life/fitness')).data.items.length===2);
+ const exported=(await call('GET','/api/data/export')).data;
+ check('导出包含正念健身及旧数据结构',exported.lifeEntries.length===3&&Array.isArray(exported.notes)&&Array.isArray(exported.habits));
+ check('天气接口需要认证',(await call('GET','/api/weather?latitude=31&longitude=121',undefined,false)).status===401);
+ check('城市查询校验',(await call('GET','/api/weather/cities?q=a')).status===400);
+ check('坐标校验',(await call('GET','/api/weather?latitude=NaN&longitude=121')).status===400);
+ globalThis.fetch=async input=>new Response(JSON.stringify(String(input).includes('geocoding')?{results:[{name:'上海',latitude:31.2,longitude:121.5,country:'中国'}]}:{current:{temperature_2m:23.6,weather_code:2,time:'2026-10-11T12:00'}}));
+ check('城市查询映射',(await call('GET','/api/weather/cities?q=上海')).data.cities[0].latitude===31.2);
+ check('天气响应映射',(await call('GET','/api/weather?latitude=31&longitude=121')).data.temperature===24);
+ globalThis.fetch=async()=>{throw new Error('offline');};
+ check('天气上游失败可控降级',(await call('GET','/api/weather?latitude=31&longitude=121')).status===503);
+ console.log(`${count} life API checks passed.`);
+}finally{globalThis.fetch=originalFetch;db.close();rmSync(dir,{recursive:true,force:true});}

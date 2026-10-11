@@ -7,25 +7,24 @@
  */
 
 import { api } from './api.js';
-import { initCosmos } from './cosmos.js';
 import { initPet } from './pet.js';
 import { $, readStored, toast, writeStored } from './util.js';
 
 import { loginView } from './views/login.js';
-import { dashboardView } from './views/dashboard.js';
+import { villageView } from './views/village.js';
+import { lifeView } from './views/life.js';
+import { todayView } from './views/today.js';
+import { pixelSettingsView } from './views/pixel-settings.js';
 import { noteEditorView, notesListView } from './views/notes.js';
-import { todosView } from './views/todos.js';
 import { habitsView } from './views/habits.js';
 import { filesView } from './views/files.js';
-import { settingsView } from './views/settings.js';
 
 const NAV = [
-  { hash: '#/', label: '首页', icon: '🏠', match: (p) => p.length === 0 },
-  { hash: '#/notes', label: '笔记', icon: '📝', match: (p) => p[0] === 'notes' },
-  { hash: '#/todos', label: '待办', icon: '✅', match: (p) => p[0] === 'todos' },
-  { hash: '#/habits', label: '习惯', icon: '🔥', match: (p) => p[0] === 'habits' },
-  { hash: '#/files', label: '文档', icon: '📄', match: (p) => p[0] === 'files' },
-  { hash: '#/settings', label: '设置', icon: '⚙️', match: (p) => p[0] === 'settings' },
+  { hash: '#/', label: '首页', icon: 'square', match: p => p.length === 0 },
+  { hash: '#/mindfulness', label: '正念', icon: 'mindfulness', match: p => p[0] === 'mindfulness' },
+  { hash: '#/fitness', label: '健身', icon: 'fitness', match: p => p[0] === 'fitness' },
+  { hash: '#/todos', label: '待办', icon: 'todos', match: p => p[0] === 'todos' },
+  { hash: '#/settings', label: '设置', icon: 'settings', match: p => p[0] === 'settings' },
 ];
 
 const SUN_ICON = `<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/>`;
@@ -114,7 +113,6 @@ const app = {
 
   /** 登录成功后进入主界面 */
   async start() {
-    await this.getBootstrap(true);
     renderShell();
     updateNav();
     await renderRoute();
@@ -130,8 +128,8 @@ function renderShell() {
     <header class="topbar">
       <div class="topbar__inner">
         <a class="brand" href="#/">
-          <span class="brand__mark">📚</span>
-          <span class="brand__text">学习空间</span>
+          <img class="pixel-brand" src="/village/buildings/square.png" alt="">
+          <span class="brand__text">生活村庄</span>
         </a>
         <nav class="nav" id="nav">
           ${NAV.map(
@@ -155,7 +153,7 @@ function renderShell() {
         ${NAV.map(
           (item) =>
             `<a class="mobile-nav__link" href="${item.hash}" data-nav="${item.hash}">
-               <span>${item.icon}</span><span>${item.label}</span>
+               <img src="/village/buildings/${item.icon}.png" alt=""><span>${item.label}</span>
              </a>`,
         ).join('')}
       </div>
@@ -212,19 +210,21 @@ async function renderRoute() {
     const [first, second] = parts;
 
     if (!first) {
-      await dashboardView(view, app);
+      await villageView(view, app);
+    } else if (first === 'mindfulness' || first === 'fitness') {
+      await lifeView(view, app, first);
     } else if (first === 'notes' && !second) {
       await notesListView(view, app);
     } else if (first === 'notes' && second) {
       await noteEditorView(view, app, second);
     } else if (first === 'todos') {
-      await todosView(view, app);
+      await todayView(view, app);
     } else if (first === 'habits') {
       await habitsView(view, app);
     } else if (first === 'files') {
       await filesView(view, app, second || null);
     } else if (first === 'settings') {
-      await settingsView(view, app);
+      await pixelSettingsView(view, app);
     } else {
       view.innerHTML = `<div class="page"><div class="empty">
         <div class="empty__icon">🧭</div>
@@ -308,6 +308,5 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-initCosmos();
 initPet();
 boot();

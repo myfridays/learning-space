@@ -121,10 +121,12 @@ export function registerData(r: Router) {
       storageUsed(env.DB),
     ]);
 
+    const life = await env.DB.prepare('SELECT * FROM life_entries WHERE deleted_at IS NULL ORDER BY day DESC, created_at DESC').all();
+    const lifeEntries = life.results.map((row: any) => ({...row, details: JSON.parse(row.details)}));
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     const payload = {
       app: 'learning-space',
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: new Date().toISOString(),
       counts: {
         notes: notes.length,
@@ -132,15 +134,17 @@ export function registerData(r: Router) {
         habits: habits.length,
         habitLogs: habitLogs.length,
         documents: documents.length,
+        lifeEntries: lifeEntries.length,
       },
       storage: { usedBytes: used },
       notice:
-        '此导出包含笔记 / 待办 / 习惯 / 打卡记录 / 文档元数据。' +
+        '此导出包含正念 / 健身 / 笔记 / 待办 / 习惯 / 打卡记录 / 文档元数据。' +
         '文档（PDF 等）的文件本体不在其中，请到「文档」页逐个下载。',
       notes,
       todos,
       habits,
       habitLogs,
+      lifeEntries,
       documents,
     };
 

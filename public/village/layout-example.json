@@ -1,0 +1,144 @@
+{
+  "canvas": {
+    "width": 480,
+    "height": 320
+  },
+  "uiSafeArea": {
+    "x": 80,
+    "y": 8,
+    "width": 320,
+    "height": 64
+  },
+  "layers": [
+    {
+      "file": "roads/straight-ew.png",
+      "x": 96,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 128,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 160,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 192,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 224,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 256,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 288,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 320,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ew.png",
+      "x": 352,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ns.png",
+      "x": 224,
+      "y": 144
+    },
+    {
+      "file": "roads/straight-ns.png",
+      "x": 224,
+      "y": 176
+    },
+    {
+      "file": "roads/straight-ns.png",
+      "x": 224,
+      "y": 208
+    },
+    {
+      "file": "roads/straight-ns.png",
+      "x": 224,
+      "y": 240
+    },
+    {
+      "file": "roads/straight-ns.png",
+      "x": 224,
+      "y": 272
+    },
+    {
+      "file": "roads/cross.png",
+      "x": 224,
+      "y": 208
+    },
+    {
+      "file": "buildings/square.png",
+      "x": 208,
+      "y": 166
+    },
+    {
+      "file": "buildings/mindfulness.png",
+      "x": 80,
+      "y": 137
+    },
+    {
+      "file": "buildings/fitness.png",
+      "x": 336,
+      "y": 136
+    },
+    {
+      "file": "buildings/todos.png",
+      "x": 137,
+      "y": 225
+    },
+    {
+      "file": "buildings/settings.png",
+      "x": 290,
+      "y": 225
+    },
+    {
+      "file": "decorations/tree.png",
+      "x": 20,
+      "y": 81
+    },
+    {
+      "file": "decorations/tree.png",
+      "x": 393,
+      "y": 85
+    },
+    {
+      "file": "decorations/tree.png",
+      "x": 12,
+      "y": 222
+    },
+    {
+      "file": "decorations/flowers.png",
+      "x": 60,
+      "y": 250
+    },
+    {
+      "file": "decorations/rock.png",
+      "x": 395,
+      "y": 255
+    },
+    {
+      "file": "decorations/sunflowers.png",
+      "x": 397,
+      "y": 180
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+[
+  {
+    "file": "buildings/fitness.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "buildings/mindfulness.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "buildings/settings.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "buildings/square.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "buildings/todos.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/cloud.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/cobblestone.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/dirt-patch.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/fence.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/flowers.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/grass-patch.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/house-balcony.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/house-blue.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/house-red.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/rock.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/stone-wall.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/storehouse.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/sunflowers.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/tools-sign.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/tree-square.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "decorations/tree.png",
+    "width": 64,
+    "height": 64,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/corner-0.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/corner-1.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/corner-2.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/corner-3.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/cross.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/straight-ew.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/straight-ns.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/tee-0.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/tee-1.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/tee-2.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  },
+  {
+    "file": "roads/tee-3.png",
+    "width": 32,
+    "height": 32,
+    "alpha": true,
+    "transparentPixels": true
+  }
+]

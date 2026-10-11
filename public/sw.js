@@ -12,11 +12,16 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v12-clear-controls';
+const CACHE_NAME = 'learning-space-v13-pixel-village';
 
 const STATIC_ASSETS = [
   '/admin.html',
   '/blog.css',
+  '/pixel.css',
+  '/js/views/village.js',
+  '/js/views/life.js',
+  '/js/views/today.js',
+  '/js/views/pixel-settings.js',
   '/js/blog.js',
   '/app.css',
   '/icon.svg',

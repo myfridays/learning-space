@@ -69,6 +69,17 @@ export const api = {
   bootstrap: () => get(`/api/bootstrap?today=${encodeURIComponent(localToday())}`),
   stats: () => get('/api/data/stats'),
 
+  life: {
+    list: (kind, offset = 0, limit = 30) => get(`/api/life/${kind}?offset=${offset}&limit=${limit}`),
+    create: (kind, body) => post(`/api/life/${kind}`, body),
+    update: (kind, id, body) => patch(`/api/life/${kind}/${encodeURIComponent(id)}`, body),
+    remove: (kind, id) => del(`/api/life/${kind}/${encodeURIComponent(id)}`),
+  },
+  weather: {
+    cities: q => get(`/api/weather/cities?q=${encodeURIComponent(q)}`),
+    current: city => get(`/api/weather?latitude=${encodeURIComponent(city.latitude)}&longitude=${encodeURIComponent(city.longitude)}`),
+  },
+
   /* 笔记 */
   notes: {
     list: (params = {}) => {

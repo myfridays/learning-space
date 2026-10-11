@@ -30,6 +30,9 @@ import { registerHabits } from './routes/habits.ts';
 import { registerDocuments } from './routes/documents.ts';
 import { registerData } from './routes/data.ts';
 
+import { registerLife } from './routes/life.ts';
+import { registerWeather } from './routes/weather.ts';
+
 const router = new Router();
 
 /* ── 认证相关（无需登录）──────────────────────────────── */
@@ -101,6 +104,8 @@ registerTodos(router);
 registerHabits(router);
 registerDocuments(router);
 registerData(router);
+registerLife(router);
+registerWeather(router);
 
 /* ── 错误处理 ─────────────────────────────────────────── */
 
