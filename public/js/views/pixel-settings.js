@@ -1,3 +1,4 @@
+import { accountSettings } from '../account-settings.js';
 import { applyPanels } from '../panels.js';
 import { api } from '../api.js';
 import { esc, readStored, writeStored } from '../util.js';
@@ -5,6 +6,7 @@ import { storedCity } from './village.js';
 export async function pixelSettingsView(el,app){
  const city=storedCity();
  el.innerHTML=`<div class="page page--narrow life-page"><header class="pixel-heading"><img src="/village/buildings/settings.png" alt=""><div><span class="pixel-kicker">MAKE YOURSELF AT HOME</span><h1>设置</h1></div></header><section class="pixel-panel settings-section"><h2>天气城市</h2><p id="chosen-city">${city?esc(city.name+' · '+city.region):'尚未选择'}</p><form id="city-form" class="inline-edit"><label class="sr-only" for="city-search">搜索城市</label><input id="city-search" placeholder="输入城市名" minlength="2" maxlength="60" required><button class="btn">查找</button></form><div id="city-results"></div><p class="inline-error" id="city-error" role="alert"></p><a class="weather-source" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">天气数据 · Open-Meteo</a></section><section class="pixel-panel settings-section"><h2>显示与声音</h2><label class="setting-row">外观<select id="theme-choice"><option value="light">白天</option><option value="dark">夜晚</option><option value="auto">跟随系统</option></select></label><label class="setting-row">显示桌宠<input type="checkbox" id="show-pet" ${readStored('pet-hidden','false')!=='true'?'checked':''}></label><label class="setting-row">桌宠音效<input type="checkbox" id="pet-audio" ${readStored('pet-muted','false')!=='true'?'checked':''}></label></section><section class="pixel-panel settings-section"><h2>更多入口</h2><nav class="legacy-links"><a href="#/notes">笔记 ↗</a><a href="#/files">文档 ↗</a><a href="#/habits">习惯 ↗</a><a href="/">公开博客 ↗</a></nav></section><section class="pixel-panel settings-section"><h2>我的数据</h2><div class="form-actions"><a class="btn" href="${api.exportUrl()}" download>导出数据</a><button class="btn" id="pixel-logout">退出登录</button></div><small class="muted">导出含正念、健身与原有记录；文档文件需单独下载。</small><p class="inline-error" id="settings-error" role="alert"></p></section></div>`;
+ if(app.user)accountSettings(el,app.user);
  applyPanels(el, '.settings-section', 'settings');
  const root=el.firstElementChild,theme=root.querySelector('#theme-choice');theme.value=readStored('theme-mode','dark');
  theme.addEventListener('change',()=>app.setThemeMode(theme.value));
@@ -15,5 +17,5 @@ export async function pixelSettingsView(el,app){
  try{const {cities}=await api.weather.cities(root.querySelector('#city-search').value.trim());if(!root.isConnected)return;results.innerHTML=cities.length?cities.map((c,i)=>`<button type="button" class="city-option" data-city="${i}"><strong>${esc(c.name)}</strong><span>${esc(c.region)}</span></button>`).join(''):'<p class="muted">没有找到，试试拼音或附近城市。</p>';results.querySelectorAll('[data-city]').forEach(btn=>btn.addEventListener('click',()=>{const selected=cities[Number(btn.dataset.city)];writeStored('weather-city',JSON.stringify(selected));writeStored('weather-cache','null');root.querySelector('#chosen-city').textContent=selected.name+' · '+selected.region;results.innerHTML='';root.querySelector('#city-search').value='';}));}
  catch(err){error.textContent=err.message;}finally{button.disabled=false;}
  });
- root.querySelector('#pixel-logout').addEventListener('click',async e=>{e.target.disabled=true;try{await api.logout();location.reload();}catch(err){root.querySelector('#settings-error').textContent=err.message;e.target.disabled=false;}});
+ root.querySelector('#pixel-logout').addEventListener('click',async e=>{e.target.disabled=true;try{await api.logout();try{localStorage.setItem('space-session-change',String(Date.now()));}catch{}location.reload();}catch(err){root.querySelector('#settings-error').textContent=err.message;e.target.disabled=false;}});
 }

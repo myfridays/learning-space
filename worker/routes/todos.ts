@@ -17,7 +17,7 @@ function parsePriority(value: unknown): string {
 
 export function registerTodos(r: Router) {
   r.get('/api/todos', async ({ env }) => {
-    const todos = await listTodos(env.DB);
+    const todos = await listTodos(env.DB, env.USER!.id);
     return ok({
       todos,
       openCount: todos.filter((t) => !t.done).length,
@@ -27,7 +27,7 @@ export function registerTodos(r: Router) {
 
   r.post('/api/todos', async ({ request, env }) => {
     const body = await readJson(request);
-    const todo = await createTodo(env.DB, {
+    const todo = await createTodo(env.DB, env.USER!.id, {
       title: str(body.title, 'title', { max: 500, required: true }).trim(),
       detail: str(body.detail, 'detail', { max: 5000 }),
       priority: parsePriority(body.priority),
@@ -56,12 +56,12 @@ export function registerTodos(r: Router) {
     if ('dueDate' in body) patch.dueDate = dateOnly(body.dueDate, 'dueDate');
     if ('sortOrder' in body) patch.sortOrder = Number(body.sortOrder) || 0;
 
-    const todo = await updateTodo(env.DB, params.id, patch);
+    const todo = await updateTodo(env.DB, env.USER!.id, params.id, patch);
     return ok({ todo });
   });
 
   r.delete('/api/todos/:id', async ({ env, params }) => {
-    await deleteTodo(env.DB, params.id);
+    await deleteTodo(env.DB, env.USER!.id, params.id);
     return ok({ deleted: params.id });
   });
 }

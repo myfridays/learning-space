@@ -45,6 +45,7 @@ const baseEnv = {
   ASSETS: assets,
   STORAGE_QUOTA_BYTES: String(8 * 1024 * 1024),
   AUTH_SECRET: 'test-secret',
+  APP_PASSWORD: 'my-secret-password',
 };
 
 /* ── 测试框架 ─────────────────────────────────────────── */
@@ -112,6 +113,8 @@ function shift(base, days) {
   return d;
 }
 
+const initialLogin=await api('POST','/api/auth/login',{username:'owner',password:baseEnv.APP_PASSWORD});
+sessionCookie=initialLogin.headers.get('set-cookie').split(';')[0];
 const today = ymd(new Date());
 
 /* ══════════════════════════════════════════════════════ */
@@ -400,7 +403,7 @@ let docId = '';
 
   const rangeRes = await worker.fetch(
     new Request(`http://local/api/documents/${docId}/file`, {
-      headers: { Range: 'bytes=0-7' },
+      headers: { Range: 'bytes=0-7', cookie: sessionCookie },
     }),
     baseEnv,
     {},
@@ -467,11 +470,10 @@ section('6. 数据导出（你的数据可以随时带走）');
 /*  7. 认证                                              */
 /* ══════════════════════════════════════════════════════ */
 
-section('7. 认证（设置 APP_PASSWORD 之后）');
+section('7. 认证与会话');
 
 {
   const securedEnv = { ...baseEnv, APP_PASSWORD: 'my-secret-password' };
-  const savedCookie = sessionCookie;
   sessionCookie = '';
 
   const noAuth = await api('GET', '/api/notes', undefined, { env: securedEnv });
@@ -508,7 +510,8 @@ section('7. 认证（设置 APP_PASSWORD 之后）');
   check('登出返回 200', logout.status === 200);
   check('登出会清空 Cookie', (logout.headers.getSetCookie?.()?.[0] ?? '').includes('Max-Age=0'));
 
-  sessionCookie = savedCookie;
+  const relogin=await api('POST','/api/auth/login',{username:'owner',password:baseEnv.APP_PASSWORD});
+  sessionCookie=relogin.headers.get('set-cookie').split(';')[0];
 }
 
 /* ══════════════════════════════════════════════════════ */
@@ -554,7 +557,7 @@ section('9. 错误处理');
   const badJson = await worker.fetch(
     new Request('http://local/api/notes', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', cookie: sessionCookie },
       body: '{ 这不是合法 JSON',
     }),
     baseEnv,
@@ -563,7 +566,7 @@ section('9. 错误处理');
   check('非法 JSON 返回 400 而不是 500', badJson.status === 400, `实际 ${badJson.status}`);
 
   const emptyBody = await worker.fetch(
-    new Request('http://local/api/notes', { method: 'POST' }),
+    new Request('http://local/api/notes', { method: 'POST', headers: {cookie:sessionCookie} }),
     baseEnv,
     {},
   );

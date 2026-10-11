@@ -35,13 +35,13 @@ export function registerData(r: Router) {
 
     const [recentNotes, noteCount, allTags, todos, habitData, documents, used] =
       await Promise.all([
-        listNotes(env.DB, { limit: 6, offset: 0 }),
-        countNotes(env.DB),
-        listTags(env.DB),
-        listTodos(env.DB),
-        habitsWithStreaks(env.DB, today, days),
-        listDocuments(env.DB),
-        storageUsed(env.DB),
+        listNotes(env.DB, env.USER!.id, { limit: 6, offset: 0 }),
+        countNotes(env.DB, env.USER!.id),
+        listTags(env.DB, env.USER!.id),
+        listTodos(env.DB, env.USER!.id),
+        habitsWithStreaks(env.DB, env.USER!.id, today, days),
+        listDocuments(env.DB, env.USER!.id),
+        storageUsed(env.DB, env.USER!.id),
       ]);
 
     const quota = Number(env.STORAGE_QUOTA_BYTES) > 0
@@ -77,12 +77,12 @@ export function registerData(r: Router) {
   /** 统计信息，给设置页用 */
   r.get('/api/data/stats', async ({ env }) => {
     const [noteCount, tags, todos, habits, documents, used] = await Promise.all([
-      countNotes(env.DB),
-      listTags(env.DB),
-      listTodos(env.DB),
-      listHabits(env.DB),
-      listDocuments(env.DB),
-      storageUsed(env.DB),
+      countNotes(env.DB, env.USER!.id),
+      listTags(env.DB, env.USER!.id),
+      listTodos(env.DB, env.USER!.id),
+      listHabits(env.DB, env.USER!.id),
+      listDocuments(env.DB, env.USER!.id),
+      storageUsed(env.DB, env.USER!.id),
     ]);
     const quota = Number(env.STORAGE_QUOTA_BYTES) > 0
       ? Number(env.STORAGE_QUOTA_BYTES)
@@ -113,20 +113,22 @@ export function registerData(r: Router) {
    */
   r.get('/api/data/export', async ({ env }) => {
     const [notes, todos, habits, habitLogs, documents, used] = await Promise.all([
-      listAllNotes(env.DB),
-      listTodos(env.DB),
-      listHabits(env.DB),
-      listHabitLogs(env.DB),
-      listDocuments(env.DB),
-      storageUsed(env.DB),
+      listAllNotes(env.DB, env.USER!.id),
+      listTodos(env.DB, env.USER!.id),
+      listHabits(env.DB, env.USER!.id),
+      listHabitLogs(env.DB, env.USER!.id),
+      listDocuments(env.DB, env.USER!.id),
+      storageUsed(env.DB, env.USER!.id),
     ]);
 
-    const life = await env.DB.prepare('SELECT * FROM life_entries WHERE deleted_at IS NULL ORDER BY day DESC, created_at DESC').all();
+    const life = await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND deleted_at IS NULL ORDER BY day DESC, created_at DESC').bind(env.USER!.id).all();
     const lifeEntries = life.results.map((row: any) => ({...row, details: JSON.parse(row.details)}));
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     const payload = {
       app: 'learning-space',
-      schemaVersion: 2,
+      schemaVersion: 3,
+      account: { id: env.USER!.id, username: env.USER!.username },
+      preferences: JSON.parse(env.USER!.preferences),
       exportedAt: new Date().toISOString(),
       counts: {
         notes: notes.length,

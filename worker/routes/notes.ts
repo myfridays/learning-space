@@ -21,8 +21,8 @@ export function registerNotes(r: Router) {
     const tag = url.searchParams.get('tag') ?? '';
 
     const [notes, total] = await Promise.all([
-      listNotes(env.DB, { q, tag, limit, offset }),
-      countNotes(env.DB),
+      listNotes(env.DB, env.USER!.id, { q, tag, limit, offset }),
+      countNotes(env.DB, env.USER!.id),
     ]);
 
     return ok({ notes, total, limit, offset });
@@ -30,7 +30,7 @@ export function registerNotes(r: Router) {
 
   // 所有标签及计数
   r.get('/api/notes/tags', async ({ env }) => {
-    return ok({ tags: await listTags(env.DB) });
+    return ok({ tags: await listTags(env.DB, env.USER!.id) });
   });
 
   /**
@@ -46,20 +46,20 @@ export function registerNotes(r: Router) {
     if (raw.length > 500) throw badRequest('一次最多删除 500 篇');
 
     const ids = raw.map((v) => String(v)).filter(Boolean);
-    const deleted = await deleteNotes(env.DB, ids);
+    const deleted = await deleteNotes(env.DB, env.USER!.id, ids);
 
     return ok({ deleted, requested: ids.length });
   });
 
   r.get('/api/notes/:id', async ({ env, params }) => {
-    const note = await getNote(env.DB, params.id);
+    const note = await getNote(env.DB, env.USER!.id, params.id);
     if (!note) throw notFound('笔记不存在');
     return ok({ note });
   });
 
   r.post('/api/notes', async ({ request, env }) => {
     const body = await readJson(request);
-    const note = await createNote(env.DB, {
+    const note = await createNote(env.DB, env.USER!.id, {
       title: str(body.title, 'title', { max: 300, def: '无标题' }).trim() || '无标题',
       content: str(body.content, 'content', { max: 500_000 }),
       tags: tags(body.tags),
@@ -87,17 +87,17 @@ export function registerNotes(r: Router) {
     }
 
     if (Object.keys(patch).length === 0) {
-      const note = await getNote(env.DB, params.id);
+      const note = await getNote(env.DB, env.USER!.id, params.id);
       if (!note) throw notFound('笔记不存在');
       return ok({ note });
     }
 
-    const note = await updateNote(env.DB, params.id, patch);
+    const note = await updateNote(env.DB, env.USER!.id, params.id, patch);
     return ok({ note });
   });
 
   r.delete('/api/notes/:id', async ({ env, params }) => {
-    await deleteNote(env.DB, params.id);
+    await deleteNote(env.DB, env.USER!.id, params.id);
     return ok({ deleted: params.id });
   });
 }

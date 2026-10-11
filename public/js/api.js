@@ -1,3 +1,6 @@
+let accountId = '';
+export function setApiAccount(id) { accountId = id; }
+
 /**
  * API 封装
  * ------------------------------------------------------------------
@@ -7,6 +10,7 @@
 
 async function request(method, path, options = {}) {
   const headers = new Headers();
+  if(accountId)headers.set('X-Space-User',accountId);
   let payload;
 
   if (options.formData) {
@@ -42,6 +46,7 @@ async function request(method, path, options = {}) {
   }
 
   if (!response.ok) {
+    if(accountId && (response.status===401 || data?.code==='account_changed'))window.dispatchEvent(new Event('session-expired'));
     const err = new Error(data?.error || `请求失败（HTTP ${response.status}）`);
     err.status = response.status;
     err.code = data?.code;
@@ -62,7 +67,10 @@ export const api = {
 
   /* 认证 */
   me: () => get('/api/auth/me'),
-  login: (password) => post('/api/auth/login', { password }),
+  login: (password, username = 'owner') => post('/api/auth/login', { password, username }),
+  changePassword: (body) => post('/api/auth/password', body),
+  preferences: (body) => patch('/api/preferences', body),
+  accounts: { list: () => get('/api/accounts'), create: (body) => post('/api/accounts',body), setDisabled: (id,disabled) => patch('/api/accounts/'+encodeURIComponent(id),{disabled}) },
   logout: () => post('/api/auth/logout', {}),
 
   /* 聚合 */
@@ -164,6 +172,7 @@ function uploadWithProgress(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/documents');
     xhr.withCredentials = true;
+    if(accountId)xhr.setRequestHeader('X-Space-User',accountId);
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && typeof onProgress === 'function') {
@@ -181,7 +190,8 @@ function uploadWithProgress(file, onProgress) {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(data);
       } else {
-        const err = new Error(data?.error || `上传失败（HTTP ${xhr.status}）`);
+        if(accountId && (response.status===401 || data?.code==='account_changed'))window.dispatchEvent(new Event('session-expired'));
+    const err = new Error(data?.error || `上传失败（HTTP ${xhr.status}）`);
         err.status = xhr.status;
         err.code = data?.code;
         reject(err);

@@ -78,3 +78,9 @@ html[data-theme="dark"] .pixel-space .village-panel { --frame-highlight:var(--bo
  .fitness-form .set-reps { grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
  .pixel-space .fitness-form .set-reps input { padding:8px 6px; }
 }
+
+.account-settings details { margin-top:16px; }
+.account-settings summary { cursor:pointer; padding:8px 0; }
+.account-settings form { margin-top:12px; }
+.account-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border); }
+.account-row span { overflow-wrap:anywhere; min-width:0; }

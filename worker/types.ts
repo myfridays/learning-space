@@ -75,16 +75,20 @@ export interface Fetcher {
   fetch(request: Request | string, init?: RequestInit): Promise<Response>;
 }
 
+export interface Account { id: string; username: string; role: 'admin' | 'member'; session_version: number; disabled: number; preferences: string; password_hash: string; }
+
 export interface Env {
+  /** Set only by the request authentication gateway. */
+  USER?: Account;
   DB: D1Database;
   BUCKET: R2Bucket;
   ASSETS?: Fetcher;
 
-  /** 登录密码。不设置则关闭登录校验（仅建议纯本地开发时这样） */
+  /** 主账号首次登录的初始化密码；初始化后不再作为登录密码 */
   APP_PASSWORD?: string;
   /** 会话签名密钥 */
   AUTH_SECRET?: string;
-  /** 文档总容量上限（字节） */
+  /** 每个账号的文档容量上限（字节） */
   STORAGE_QUOTA_BYTES?: string;
   /** 会话有效期（天） */
   SESSION_DAYS?: string;

@@ -22,13 +22,13 @@ export function registerHabits(r: Router) {
       new Date().toISOString().slice(0, 10);
     const days = Math.min(Math.max(Number(url.searchParams.get('days') ?? 112) || 112, 7), 730);
 
-    const { habits, logs, from } = await habitsWithStreaks(env.DB, today, days);
+    const { habits, logs, from } = await habitsWithStreaks(env.DB, env.USER!.id, today, days);
     return ok({ habits, logs, today, from, days });
   });
 
   r.post('/api/habits', async ({ request, env }) => {
     const body = await readJson(request);
-    const habit = await createHabit(env.DB, {
+    const habit = await createHabit(env.DB, env.USER!.id, {
       name: str(body.name, 'name', { max: 100, required: true }).trim(),
       icon: str(body.icon, 'icon', { max: 8, def: '✅' }).trim() || '✅',
       color: str(body.color, 'color', { max: 32, def: '#186b5f' }).trim() || '#186b5f',
@@ -55,12 +55,12 @@ export function registerHabits(r: Router) {
     if ('active' in body) patch.active = Boolean(body.active);
     if ('sortOrder' in body) patch.sortOrder = Number(body.sortOrder) || 0;
 
-    const habit = await updateHabit(env.DB, params.id, patch);
+    const habit = await updateHabit(env.DB, env.USER!.id, params.id, patch);
     return ok({ habit });
   });
 
   r.delete('/api/habits/:id', async ({ env, params }) => {
-    await deleteHabit(env.DB, params.id);
+    await deleteHabit(env.DB, env.USER!.id, params.id);
     return ok({ deleted: params.id });
   });
 
@@ -80,7 +80,7 @@ export function registerHabits(r: Router) {
       checked = body.checked;
     }
 
-    const result = await setHabitLog(env.DB, params.id, day, checked);
+    const result = await setHabitLog(env.DB, env.USER!.id, params.id, day, checked);
     return ok(result);
   });
 }

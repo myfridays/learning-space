@@ -1,23 +1,12 @@
-/**
- * 认证：单用户密码 + HMAC 签名 Cookie
- * ------------------------------------------------------------------
- * 零依赖，全部用 Web Crypto 实现。
- *
- * 会话令牌格式：  base64url(payload) + "." + base64url(HMAC-SHA256(payload))
- * 存放位置：      HttpOnly Cookie，JS 读不到，能防 XSS 窃取
- *
- * 如果环境变量 APP_PASSWORD 没有设置，则关闭登录校验（方便纯本地开发）。
- * 一旦设置了 APP_PASSWORD，所有 /api/* 接口（除登录相关）都需要有效会话。
- */
-
-import type { Env } from './types.ts';
-import { unauthorized } from './lib.ts';
+import type { Account, Env } from './types.ts';
+import { HttpError, unauthorized } from './lib.ts';
 
 export const COOKIE_NAME = 'ls_session';
 const DEFAULT_SESSION_DAYS = 30;
 
 export interface SessionPayload {
   sub: string;
+  ver: number;
   iat: number;
   exp: number;
 }
@@ -65,11 +54,12 @@ function sessionDays(env: Env): number {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_SESSION_DAYS;
 }
 
-export async function createSessionToken(env: Env): Promise<string> {
-  const secret = env.AUTH_SECRET || 'insecure-dev-secret';
+export async function createSessionToken(env: Env, user: Account): Promise<string> {
+  const secret = signingSecret(env);
   const now = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
-    sub: 'owner',
+    sub: user.id,
+    ver: user.session_version,
     iat: now,
     exp: now + sessionDays(env) * 24 * 60 * 60,
   };
@@ -80,10 +70,11 @@ export async function createSessionToken(env: Env): Promise<string> {
 
 export async function verifySessionToken(env: Env, token: string): Promise<SessionPayload | null> {
   if (!token || !token.includes('.')) return null;
+  if(token.split('.').length!==2)return null;
   const [encoded, signature] = token.split('.');
   if (!encoded || !signature) return null;
 
-  const secret = env.AUTH_SECRET || 'insecure-dev-secret';
+  const secret = signingSecret(env);
   const expected = await hmac(secret, encoded);
 
   let provided: Uint8Array;
@@ -97,7 +88,7 @@ export async function verifySessionToken(env: Env, token: string): Promise<Sessi
   try {
     const payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(encoded))) as SessionPayload;
     if (typeof payload.exp !== 'number' || payload.exp * 1000 < Date.now()) return null;
-    if (payload.sub !== 'owner') return null;
+    if (typeof payload.sub !== 'string' || !Number.isInteger(payload.ver)) return null;
     return payload;
   } catch {
     return null;
@@ -106,19 +97,34 @@ export async function verifySessionToken(env: Env, token: string): Promise<Sessi
 
 /* ── 密码校验 ──────────────────────────────────────────── */
 
-/** 用常量时间比较，避免通过响应时间推测密码 */
-export async function checkPassword(env: Env, submitted: string): Promise<boolean> {
-  const expected = env.APP_PASSWORD;
-  if (!expected) return true; // 未设置密码 = 不校验
-  const secret = env.AUTH_SECRET || 'insecure-dev-secret';
-  const a = await hmac(secret, submitted);
-  const b = await hmac(secret, expected);
-  return timingSafeEqual(a, b);
+function signingSecret(env: Env): string {
+  if (!env.AUTH_SECRET) throw new HttpError(503,'请配置会话密钥','auth_not_configured');
+  return env.AUTH_SECRET;
 }
 
-/** 是否启用了登录校验 */
-export function authEnabled(env: Env): boolean {
-  return Boolean(env.APP_PASSWORD);
+export async function hashPassword(password: string, salt = crypto.getRandomValues(new Uint8Array(16))): Promise<string> {
+  const key = await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  // Cloudflare Web Crypto supports up to 100,000 PBKDF2 iterations.
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},key,256);
+  return `pbkdf2$100000$${bytesToBase64Url(salt)}$${bytesToBase64Url(new Uint8Array(bits))}`;
+}
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const parts=stored.split('$');
+  if(parts.length!==4 || parts[0]!=='pbkdf2'||parts[1]!=='100000')return false;
+  try { return timingSafeEqual(new TextEncoder().encode(await hashPassword(password,base64UrlToBytes(parts[2]))),new TextEncoder().encode(stored)); } catch { return false; }
+}
+export async function checkPassword(env: Env, submitted: string): Promise<boolean> {
+  if(!env.APP_PASSWORD)return false;
+  return timingSafeEqual(await hmac(signingSecret(env),submitted),await hmac(signingSecret(env),env.APP_PASSWORD));
+}
+export function authEnabled(_env: Env): boolean { return true; }
+export function publicAccount(user: Account) { return {id:user.id,username:user.username,role:user.role,disabled:Boolean(user.disabled)}; }
+export async function currentUser(request: Request, env: Env): Promise<Account | null> {
+  const token=getCookie(request,COOKIE_NAME);
+  const payload=token?await verifySessionToken(env,token):null;
+  if(!payload)return null;
+  const user=await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(payload.sub).first<Account>();
+  return user&&!user.disabled&&user.session_version===payload.ver?user:null;
 }
 
 /* ── Cookie ────────────────────────────────────────────── */
@@ -130,7 +136,7 @@ export function getCookie(request: Request, name: string): string | null {
     const idx = part.indexOf('=');
     if (idx === -1) continue;
     if (part.slice(0, idx).trim() === name) {
-      return decodeURIComponent(part.slice(idx + 1).trim());
+      try { return decodeURIComponent(part.slice(idx + 1).trim()); } catch { return null; }
     }
   }
   return null;
@@ -172,13 +178,10 @@ export function isSecureRequest(request: Request): boolean {
 
 /**
  * 校验当前请求是否已登录。
- * 抛出 401 由 index.ts 统一处理；返回 true 表示通过。
+ * 抛出 401 由 index.ts 统一处理；返回当前有效账号。
  */
-export async function requireSession(request: Request, env: Env): Promise<boolean> {
-  if (!authEnabled(env)) return true;
-  const token = getCookie(request, COOKIE_NAME);
-  if (!token) throw unauthorized('未登录');
-  const payload = await verifySessionToken(env, token);
-  if (!payload) throw unauthorized('登录已过期，请重新登录');
-  return true;
+export async function requireSession(request: Request, env: Env): Promise<Account> {
+  const user=await currentUser(request,env);
+  if(!user)throw unauthorized('请重新登录');
+  return user;
 }

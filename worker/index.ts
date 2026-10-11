@@ -10,19 +10,9 @@
 
 import type { Env } from './types.ts';
 import { Router } from './router.ts';
-import { HttpError, json, notFound, ok, readJson, str } from './lib.ts';
-import {
-  authEnabled,
-  checkPassword,
-  clearedSessionCookie,
-  createSessionToken,
-  getCookie,
-  isSecureRequest,
-  COOKIE_NAME,
-  requireSession,
-  sessionCookie,
-  verifySessionToken,
-} from './auth.ts';
+import { HttpError, json, notFound, ok } from './lib.ts';
+import { authEnabled, requireSession } from './auth.ts';
+import { registerAccounts } from './routes/accounts.ts';
 
 import { registerNotes } from './routes/notes.ts';
 import { registerTodos } from './routes/todos.ts';
@@ -51,51 +41,7 @@ router.get(
   { auth: false },
 );
 
-router.get(
-  '/api/auth/me',
-  async ({ request, env }) => {
-    const enabled = authEnabled(env);
-    if (!enabled) return ok({ authEnabled: false, authenticated: true });
-
-    const token = getCookie(request, COOKIE_NAME);
-    const payload = token ? await verifySessionToken(env, token) : null;
-    return ok({ authEnabled: true, authenticated: Boolean(payload) });
-  },
-  { auth: false },
-);
-
-router.post(
-  '/api/auth/login',
-  async ({ request, env }) => {
-    const body = await readJson(request);
-    const password = str(body.password, 'password', { max: 200, required: true });
-
-    const passed = await checkPassword(env, password);
-    if (!passed) {
-      // 加一点延迟，抬高暴力破解成本
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      throw new HttpError(401, '密码不正确', 'bad_credentials');
-    }
-
-    const token = await createSessionToken(env);
-    const secure = isSecureRequest(request);
-    return json(
-      { ok: true, authenticated: true, authEnabled: authEnabled(env) },
-      { headers: { 'set-cookie': sessionCookie(env, token, secure) } },
-    );
-  },
-  { auth: false },
-);
-
-router.post(
-  '/api/auth/logout',
-  async ({ request }) =>
-    json(
-      { ok: true },
-      { headers: { 'set-cookie': clearedSessionCookie(isSecureRequest(request)) } },
-    ),
-  { auth: false },
-);
+registerAccounts(router);
 
 /* ── 业务接口（需要登录）──────────────────────────────── */
 
@@ -162,16 +108,24 @@ export default {
       }
 
       if (matched.route.auth) {
-        await requireSession(request, env);
+        const user = await requireSession(request, env);
+        if(request.headers.get('X-Space-User') && request.headers.get('X-Space-User')!==user.id)throw new HttpError(409,'账号已切换，请刷新页面','account_changed');
+        env = { ...env, USER: user };
       }
 
-      return await matched.route.handler({
+      if (!['GET','HEAD'].includes(request.method)) {
+        const origin=request.headers.get('origin');
+        if(origin && origin!==url.origin)throw new HttpError(403,'请求来源无效','forbidden');
+      }
+      const response = await matched.route.handler({
         request,
         env,
         url,
         params: matched.params,
         method: request.method,
       });
+      const headers=new Headers(response.headers);headers.set('cache-control','no-store');
+      return new Response(response.body,{status:response.status,headers});
     } catch (err) {
       return handleError(err);
     }

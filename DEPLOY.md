@@ -1,5 +1,7 @@
 # 部署指南
 
+当前多账户版本的迁移与认证以 [多账户说明](docs/accounts.md) 为准：部署前先应用 `0004_accounts.sql`，不要在现有库重放初始化/示例数据。
+
 从零到线上可访问，全程大约 **30 分钟**，**不需要花一分钱**。
 
 ---
@@ -154,7 +156,7 @@ npx wrangler secret list
 
 应该看到 `APP_PASSWORD` 和 `AUTH_SECRET` 两项。
 
-> 想改密码：重新执行一次 `npx wrangler secret put APP_PASSWORD` 即可。
+> 多账户版本在「设置 → 我的账号」修改密码。`APP_PASSWORD` 只用于主账号首次初始化，`AUTH_SECRET` 始终必需。
 > 改完 AUTH_SECRET 会让所有已登录的设备失效（需要重新登录）。
 
 ---
@@ -554,7 +556,7 @@ npx wrangler d1 execute learning-space --remote --file=./migrations/0001_init.sq
 
 ```bash
 npx wrangler secret list          # 确认 APP_PASSWORD 存在
-npx wrangler secret put APP_PASSWORD   # 重新设置一次
+npx wrangler secret put APP_PASSWORD   # 仅主账号尚未初始化时设置
 ```
 
 **Q：上传文件报 413**
@@ -584,7 +586,7 @@ npx wrangler secret put APP_PASSWORD   # 重新设置一次
 
 **Q：忘记密码了，数据还在吗？**
 
-**在。** 密码只是登录凭证，跟数据无关。重新 `wrangler secret put APP_PASSWORD` 设一个新密码即可。
+**在。** 多账户版本初始化后不能通过修改 `APP_PASSWORD` 重置密码。已登录时到设置中修改；无法登录需由数据库维护者受控重置，见 [多账户说明](docs/accounts.md)。
 
 **Q：怎么把数据搬到别的平台？**
 

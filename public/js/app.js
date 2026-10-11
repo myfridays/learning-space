@@ -6,9 +6,9 @@
  *   2. 深度链接刷新时不会 404
  */
 
-import { api } from './api.js';
+import { api, setApiAccount } from './api.js';
 import { initPet } from './pet.js';
-import { $, readStored, toast, writeStored } from './util.js';
+import { $, readStored, toast, writeStored, setStorageUser } from './util.js';
 
 import { loginView } from './views/login.js';
 import { villageView } from './views/village.js';
@@ -276,10 +276,19 @@ async function boot() {
     const me = await api.me();
 
     if (me.authEnabled && !me.authenticated) {
+      initPet();
       loginView(root, app);
       return;
     }
 
+    app.user=me.user;
+    if(me.user) {
+      setApiAccount(me.user.id);
+      const migrated=setStorageUser(me.user.id,me.preferences||{});
+      if(Object.keys(migrated).length)await api.preferences(migrated).catch(()=>toast('旧偏好未同步，可在设置中重新保存'));
+      themeMode=readStored('theme-mode','dark');applyTheme();
+    }
+    initPet();
     await app.start();
 
   } catch (err) {
@@ -310,5 +319,10 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-initPet();
+let preferenceQueue=Promise.resolve();
+window.addEventListener('preference-change',event=>{
+  preferenceQueue=preferenceQueue.catch(()=>{}).then(()=>api.preferences(event.detail)).catch(()=>toast('偏好设置未同步，请稍后重试'));
+});
+window.addEventListener('session-expired',()=>location.reload());
+window.addEventListener('storage',event=>{if(event.key==='space-session-change')location.reload();});
 boot();

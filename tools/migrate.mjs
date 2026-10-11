@@ -2,12 +2,10 @@
  * 本地迁移工具
  * ------------------------------------------------------------------
  * 把 migrations/*.sql 按文件名顺序应用到本地 SQLite 数据库。
- * 迁移 SQL 全部是幂等的（IF NOT EXISTS / INSERT OR IGNORE），
- * 所以反复执行是安全的。
+ * 已应用文件记录在 local_migrations 中，重复运行不会重放迁移或示例数据。
  *
  * 用法：
  *   node tools/migrate.mjs              # 应用到 .local/db.sqlite
- *   node tools/migrate.mjs --seed-only  # 只跑 seed
  */
 
 import { join, dirname } from 'node:path';
@@ -19,7 +17,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dbFile = process.env.DB_FILE || join(root, '.local', 'db.sqlite');
 
 const db = createD1(dbFile);
-const seedOnly = process.argv.includes('--seed-only');
 
 const applied = applyMigrations(db, join(root, 'migrations'));
 
@@ -33,7 +30,7 @@ for (const { name } of tables) {
 }
 
 console.log(`数据库文件 : ${dbFile}`);
-console.log(`已执行迁移 : ${applied.join(', ')}${seedOnly ? '（--seed-only 模式下全部重跑，因为 SQL 幂等）' : ''}`);
+console.log(`已执行迁移 : ${applied.join(', ')}`);
 console.log('');
 console.log('表名            行数');
 console.log('─'.repeat(28));

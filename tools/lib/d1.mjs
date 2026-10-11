@@ -149,18 +149,25 @@ export class D1Shim {
 
 /**
  * 按文件名顺序执行 migrations/ 目录下的所有 .sql 文件。
- * 迁移 SQL 本身是幂等的（IF NOT EXISTS / INSERT OR IGNORE），
- * 所以重复执行是安全的。
+ * local_migrations 记录已应用文件，每个新迁移在事务中执行一次。
  */
 export function applyMigrations(db, migrationsDir) {
   const files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
+  db.native.exec("CREATE TABLE IF NOT EXISTS local_migrations (name TEXT PRIMARY KEY)");
   const applied = [];
   for (const file of files) {
     const sql = readFileSync(join(migrationsDir, file), 'utf8');
-    db.native.exec(sql);
+    if (!db.native.prepare('SELECT name FROM local_migrations WHERE name=?').get(file)) {
+      db.native.exec('BEGIN');
+      try {
+        db.native.exec(sql);
+        db.native.prepare('INSERT INTO local_migrations(name) VALUES (?)').run(file);
+        db.native.exec('COMMIT');
+      } catch (err) { db.native.exec('ROLLBACK'); throw err; }
+    }
     applied.push(file);
   }
   return applied;

@@ -1,5 +1,7 @@
 # 独立博客 + 私人学习工作台
 
+私人空间已支持多账户。主账号为 `owner`，首次使用原密码登录，在设置中创建和停用成员账号。**上线前需执行一次 `npm run db:accounts:remote`**；迁移顺序与操作见 [多账户说明](docs/accounts.md)。
+
 私人工作台现为像素生活村庄：首页、正念、健身、待办、设置。上线前先执行 `npm run db:life:remote` 新建生活记录表；见 [村庄使用与迁移说明](docs/pixel-village.md)。
 
 现在首页是公开博客，使用 `content/posts/*.md` 写作，原学习空间位于 `/admin.html`。完整流程见 [博客写作与发布指南](docs/blog-writing.md)。

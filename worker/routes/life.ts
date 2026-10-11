@@ -49,29 +49,29 @@ function clean(kind: string, body: Record<string,unknown>) {
 export function registerLife(r: Router) {
   r.get('/api/life/:kind',async({env,params,url})=>{
     const kind=kindOf(params.kind),limit=int(url.searchParams.get('limit'),'limit',{min:1,max:100,def:30}),offset=int(url.searchParams.get('offset'),'offset',{min:0,max:100000,def:0});
-    const rows=await env.DB.prepare('SELECT * FROM life_entries WHERE kind=? AND deleted_at IS NULL ORDER BY day DESC, created_at DESC, id DESC LIMIT ? OFFSET ?').bind(kind,limit+1,offset).all();
+    const rows=await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND kind=? AND deleted_at IS NULL ORDER BY day DESC, created_at DESC, id DESC LIMIT ? OFFSET ?').bind(env.USER!.id,kind,limit+1,offset).all();
     return ok({items:rows.results.slice(0,limit).map(dto),hasMore:rows.results.length>limit});
   });
   r.post('/api/life/:kind',async({env,params,request})=>{
     const kind=kindOf(params.kind),value=clean(kind,await readJson(request)),id=newId('life_'),now=nowIso();
-    await env.DB.prepare('INSERT INTO life_entries (id,kind,content,day,details,created_at,updated_at) VALUES (?,?,?,?,?,?,?)').bind(id,kind,value.content,value.day,value.details,now,now).run();
-    return json({item:dto(await env.DB.prepare('SELECT * FROM life_entries WHERE id=?').bind(id).first())},{status:201});
+    await env.DB.prepare('INSERT INTO life_entries (id,kind,content,day,details,created_at,updated_at,user_id) VALUES (?,?,?,?,?,?,?,?)').bind(id,kind,value.content,value.day,value.details,now,now,env.USER!.id).run();
+    return json({item:dto(await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND id=?').bind(env.USER!.id,id).first())},{status:201});
   });
   r.patch('/api/life/:kind/:id',async({env,params,request})=>{
-    const kind=kindOf(params.kind),row:any=await env.DB.prepare('SELECT * FROM life_entries WHERE id=? AND kind=?').bind(params.id,kind).first();if(!row)throw notFound();
+    const kind=kindOf(params.kind),row:any=await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND id=? AND kind=?').bind(env.USER!.id,params.id,kind).first();if(!row)throw notFound();
     const body=await readJson(request);
-    if(body.restore===true){await env.DB.prepare('UPDATE life_entries SET deleted_at=NULL, updated_at=? WHERE id=?').bind(nowIso(),params.id).run();}
+    if(body.restore===true){await env.DB.prepare('UPDATE life_entries SET deleted_at=NULL, updated_at=? WHERE user_id=? AND id=?').bind(nowIso(),env.USER!.id,params.id).run();}
     else {
       if(row.deleted_at)throw notFound();
       const value=clean(kind,{...dto(row),...body});
-      await env.DB.prepare('UPDATE life_entries SET content=?,day=?,details=?,updated_at=? WHERE id=?').bind(value.content,value.day,value.details,nowIso(),params.id).run();
+      await env.DB.prepare('UPDATE life_entries SET content=?,day=?,details=?,updated_at=? WHERE user_id=? AND id=?').bind(value.content,value.day,value.details,nowIso(),env.USER!.id,params.id).run();
     }
-    return ok({item:dto(await env.DB.prepare('SELECT * FROM life_entries WHERE id=?').bind(params.id).first())});
+    return ok({item:dto(await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND id=?').bind(env.USER!.id,params.id).first())});
   });
   r.delete('/api/life/:kind/:id',async({env,params})=>{
     const kind=kindOf(params.kind);
-    const row=await env.DB.prepare('SELECT id FROM life_entries WHERE id=? AND kind=? AND deleted_at IS NULL').bind(params.id,kind).first();if(!row)throw notFound();
-    await env.DB.prepare('UPDATE life_entries SET deleted_at=? WHERE id=?').bind(nowIso(),params.id).run();
+    const row=await env.DB.prepare('SELECT id FROM life_entries WHERE user_id=? AND id=? AND kind=? AND deleted_at IS NULL').bind(env.USER!.id,params.id,kind).first();if(!row)throw notFound();
+    await env.DB.prepare('UPDATE life_entries SET deleted_at=? WHERE user_id=? AND id=?').bind(nowIso(),env.USER!.id,params.id).run();
     return ok({deleted:params.id});
   });
 }

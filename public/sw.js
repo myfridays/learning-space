@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v17-no-whale-button';
+const CACHE_NAME = 'learning-space-v18-accounts';
 
 const STATIC_ASSETS = [
   '/admin.html',
@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   '/pixel.css',
   '/panel-layout.css',
   '/js/panels.js',
+  '/js/account-settings.js',
   '/js/views/village.js',
   '/js/views/life.js',
   '/js/views/fitness.js',

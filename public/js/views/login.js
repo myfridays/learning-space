@@ -9,9 +9,10 @@ export function loginView(el, app) {
       <form class="login" id="loginForm" autocomplete="on">
         <img class="pixel-login-house" src="/village/buildings/square.png" alt="">
         <h1 class="login__title">生活村庄</h1>
-        <p class="login__sub">输入密码，回到自己的小天地</p>
+        <p class="login__sub">登录账号，回到自己的小天地</p>
 
         <div id="loginError" hidden></div>
+        <div class="field" style="margin-bottom:16px"><label class="field__label" for="username">账号</label><input class="input" id="username" name="username" autocomplete="username" maxlength="32" value="owner" required></div>
 
         <div class="field" style="margin-bottom:16px">
           <label class="field__label" for="password">密码</label>
@@ -22,7 +23,7 @@ export function loginView(el, app) {
         <button class="btn btn--primary btn--block" type="submit" id="loginBtn">进入</button>
 
         <p class="small muted" style="text-align:center;margin-top:18px;line-height:1.6">
-          这是私人空间，数据保存在你自己的 Cloudflare 账号里
+          账号由管理员创建，个人记录独立保存
         </p>
       </form>
     </div>`;
@@ -39,8 +40,9 @@ export function loginView(el, app) {
     button.textContent = '验证中…';
 
     try {
-      await api.login(passwordInput.value);
-      await app.start();
+      await api.login(passwordInput.value, el.querySelector('#username').value);
+      try { localStorage.setItem('space-session-change',String(Date.now())); } catch {}
+      location.reload();
     } catch (err) {
       errorBox.hidden = false;
       errorBox.className = 'login__error';

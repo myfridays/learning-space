@@ -103,9 +103,29 @@ export function plural(n, unit) {
    初始化路径上没包住，整个模块会加载失败，页面就是一片空白。
    所以统一走这两个函数。                                        */
 
+let storageUser = '';
+const personalKeys = new Set(['theme-mode','pet-hidden','pet-muted','weather-city','weather-cache']);
+export function setStorageUser(id, preferences = {}) {
+  storageUser = id;
+  const migrated = {};
+  for (const key of personalKeys) {
+    try {
+      const scoped = `account:${id}:${key}`;
+      // Only the original owner inherits this browser's pre-account preferences.
+      if(id==='owner' && localStorage.getItem(scoped)===null && !(key in preferences)) {
+        const value=localStorage.getItem(key);
+        if(value!==null){localStorage.setItem(scoped,value);if(key!=='weather-cache')migrated[key]=value;}
+      }
+      if(key in preferences)localStorage.setItem(scoped,preferences[key]);
+    } catch {}
+  }
+  return migrated;
+}
+function storageKey(key) { return storageUser && personalKeys.has(key) ? `account:${storageUser}:${key}` : key; }
+
 export function readStored(key, fallback = null) {
   try {
-    const value = localStorage.getItem(key);
+    const value = localStorage.getItem(storageKey(key));
     return value === null ? fallback : value;
   } catch {
     return fallback;
@@ -114,7 +134,8 @@ export function readStored(key, fallback = null) {
 
 export function writeStored(key, value) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(storageKey(key), value);
+    if(storageUser && personalKeys.has(key) && key!=='weather-cache')window.dispatchEvent(new CustomEvent('preference-change',{detail:{[key]:String(value)}}));
     return true;
   } catch {
     return false;

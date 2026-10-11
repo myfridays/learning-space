@@ -13,7 +13,7 @@
     "test:modules": "node tools/test-modules.mjs",
     "test:units": "node tools/test-units.mjs",
     "test:http": "node tools/test-http.mjs",
-    "test:all": "node tools/check-imports.mjs && node tools/test-modules.mjs && node tools/test-units.mjs && node tools/test-api.mjs && node tools/test-blog.mjs && node tools/test-life.mjs",
+    "test:all": "node tools/check-imports.mjs && node tools/test-modules.mjs && node tools/test-units.mjs && node tools/test-api.mjs && node tools/test-blog.mjs && node tools/test-life.mjs && node tools/test-accounts.mjs",
     "db:local": "wrangler d1 execute learning-space --local --file=./migrations/0001_init.sql",
     "db:local:seed": "wrangler d1 execute learning-space --local --file=./migrations/0002_seed.sql",
     "db:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0001_init.sql",
@@ -28,7 +28,9 @@
     "test:blog": "node tools/test-blog.mjs",
     "post": "node tools/new-post.mjs",
     "test:life": "node tools/test-life.mjs",
-    "db:life:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0003_life_entries.sql"
+    "db:life:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0003_life_entries.sql",
+    "test:accounts": "node tools/test-accounts.mjs",
+    "db:accounts:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0004_accounts.sql"
   },
   "devDependencies": {
     "wrangler": "^4.20.0"

@@ -149,11 +149,11 @@ function likePattern(keyword: string): string {
 }
 
 export async function listNotes(
-  db: D1Database,
+  db: D1Database, userId: string,
   opts: { q?: string; tag?: string; limit: number; offset: number },
 ): Promise<NoteDTO[]> {
-  const where: string[] = [];
-  const params: unknown[] = [];
+  const where: string[] = ['user_id = ?'];
+  const params: unknown[] = [userId];
 
   if (opts.q && opts.q.trim()) {
     const p = likePattern(opts.q.trim());
@@ -181,21 +181,21 @@ export async function listNotes(
   return results.map(toNote);
 }
 
-export async function getNote(db: D1Database, id: string): Promise<NoteDTO | null> {
-  const row = await db.prepare('SELECT * FROM notes WHERE id = ?').bind(id).first<NoteRow>();
+export async function getNote(db: D1Database, userId: string, id: string): Promise<NoteDTO | null> {
+  const row = await db.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ? ').bind(id, userId).first<NoteRow>();
   return row ? toNote(row) : null;
 }
 
-export async function countNotes(db: D1Database): Promise<number> {
+export async function countNotes(db: D1Database, userId: string): Promise<number> {
   const row = await db
-    .prepare('SELECT COUNT(*) AS n FROM notes')
+    .prepare('SELECT COUNT(*) AS n FROM notes WHERE user_id = ? ').bind(userId)
     .first<{ n: number }>();
   return Number(row?.n ?? 0);
 }
 
 /** 统计所有标签及出现次数，按次数倒序 */
-export async function listTags(db: D1Database): Promise<Array<{ tag: string; count: number }>> {
-  const { results } = await db.prepare('SELECT tags FROM notes').all<{ tags: string }>();
+export async function listTags(db: D1Database, userId: string): Promise<Array<{ tag: string; count: number }>> {
+  const { results } = await db.prepare('SELECT tags FROM notes WHERE user_id = ? ').bind(userId).all<{ tags: string }>();
   const counter = new Map<string, number>();
   for (const row of results) {
     for (const tag of parseTags(row.tags)) {
@@ -208,30 +208,28 @@ export async function listTags(db: D1Database): Promise<Array<{ tag: string; cou
 }
 
 export async function createNote(
-  db: D1Database,
+  db: D1Database, userId: string,
   input: { title: string; content: string; tags: string; pinned: boolean },
 ): Promise<NoteDTO> {
   const now = nowIso();
   const id = newId('note_');
   await db
-    .prepare(
-      `INSERT INTO notes (id, title, content, tags, pinned, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(id, input.title, input.content, input.tags, input.pinned ? 1 : 0, now, now)
+    .prepare(`INSERT INTO notes (id, title, content, tags, pinned, created_at, updated_at, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, input.title, input.content, input.tags, input.pinned ? 1 : 0, now, now, userId)
     .run();
-  const created = await getNote(db, id);
+  const created = await getNote(db, userId, id);
   if (!created) throw new Error('笔记创建后读取失败');
   return created;
 }
 
 /** 局部更新：只覆盖传进来的字段，没传的保持原值 */
 export async function updateNote(
-  db: D1Database,
+  db: D1Database, userId: string,
   id: string,
   patch: { title?: string; content?: string; tags?: string; pinned?: boolean },
 ): Promise<NoteDTO> {
-  const existing = await db.prepare('SELECT * FROM notes WHERE id = ?').bind(id).first<NoteRow>();
+  const existing = await db.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ? ').bind(id, userId).first<NoteRow>();
   if (!existing) throw notFound('笔记不存在');
 
   const title = patch.title ?? existing.title;
@@ -240,20 +238,18 @@ export async function updateNote(
   const pinned = patch.pinned === undefined ? existing.pinned : patch.pinned ? 1 : 0;
 
   await db
-    .prepare(
-      `UPDATE notes SET title = ?, content = ?, tags = ?, pinned = ?, updated_at = ?
-       WHERE id = ?`,
-    )
-    .bind(title, content, tags, pinned, nowIso(), id)
+    .prepare(`UPDATE notes SET title = ?, content = ?, tags = ?, pinned = ?, updated_at = ?
+       WHERE id = ? AND user_id = ? `)
+    .bind(title, content, tags, pinned, nowIso(), id, userId)
     .run();
 
-  const updated = await getNote(db, id);
+  const updated = await getNote(db, userId, id);
   if (!updated) throw notFound('笔记不存在');
   return updated;
 }
 
-export async function deleteNote(db: D1Database, id: string): Promise<void> {
-  const res = await db.prepare('DELETE FROM notes WHERE id = ?').bind(id).run();
+export async function deleteNote(db: D1Database, userId: string, id: string): Promise<void> {
+  const res = await db.prepare('DELETE FROM notes WHERE id = ? AND user_id = ? ').bind(id, userId).run();
   const changes = Number((res.meta as { changes?: number })?.changes ?? 0);
   if (changes === 0) throw notFound('笔记不存在');
 }
@@ -264,22 +260,22 @@ export async function deleteNote(db: D1Database, id: string): Promise<void> {
  * 返回值可能小于传入的 ids 数量——因为有些可能已经被删过了，
  * 或者根本不存在。这种情况不算错误，前端只需要知道删了几篇。
  *
- * 为什么要分批：SQLite 单条语句的绑定变量数量有上限（默认 999 个），
+ * 为什么要分批：SQLite 单条语句的绑定变量数量有上限（D1 为 100 个），
  * 一次删几百篇就必须拆成多条语句。
  */
-export async function deleteNotes(db: D1Database, ids: string[]): Promise<number> {
+export async function deleteNotes(db: D1Database, userId: string, ids: string[]): Promise<number> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return 0;
 
-  const CHUNK = 100;
+  const CHUNK = 99; // D1: 100 bound parameters, reserving one for ownership.
   let deleted = 0;
 
   for (let i = 0; i < unique.length; i += CHUNK) {
     const chunk = unique.slice(i, i + CHUNK);
     const placeholders = chunk.map(() => '?').join(', ');
     const res = await db
-      .prepare(`DELETE FROM notes WHERE id IN (${placeholders})`)
-      .bind(...chunk)
+      .prepare(`DELETE FROM notes WHERE id IN (${placeholders}) AND user_id = ? `)
+      .bind(...chunk, userId)
       .run();
     deleted += Number((res.meta as { changes?: number })?.changes ?? 0);
   }
@@ -289,20 +285,20 @@ export async function deleteNotes(db: D1Database, ids: string[]): Promise<number
 
 /* ── 待办 ──────────────────────────────────────────────── */
 
-export async function listTodos(db: D1Database): Promise<TodoDTO[]> {
+export async function listTodos(db: D1Database, userId: string): Promise<TodoDTO[]> {
   const { results } = await db
-    .prepare('SELECT * FROM todos ORDER BY done ASC, sort_order ASC, created_at DESC')
+    .prepare('SELECT * FROM todos WHERE user_id = ? ORDER BY done ASC, sort_order ASC, created_at DESC').bind(userId)
     .all<TodoRow>();
   return results.map(toTodo);
 }
 
-export async function getTodo(db: D1Database, id: string): Promise<TodoDTO | null> {
-  const row = await db.prepare('SELECT * FROM todos WHERE id = ?').bind(id).first<TodoRow>();
+export async function getTodo(db: D1Database, userId: string, id: string): Promise<TodoDTO | null> {
+  const row = await db.prepare('SELECT * FROM todos WHERE id = ? AND user_id = ? ').bind(id, userId).first<TodoRow>();
   return row ? toTodo(row) : null;
 }
 
 export async function createTodo(
-  db: D1Database,
+  db: D1Database, userId: string,
   input: {
     title: string;
     detail: string;
@@ -313,25 +309,23 @@ export async function createTodo(
   const now = nowIso();
   const id = newId('todo_');
   const maxRow = await db
-    .prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM todos')
+    .prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM todos WHERE user_id = ? ').bind(userId)
     .first<{ m: number }>();
   const sortOrder = Number(maxRow?.m ?? 0) + 1;
 
   await db
-    .prepare(
-      `INSERT INTO todos (id, title, detail, priority, done, due_date, sort_order, created_at, updated_at, done_at)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NULL)`,
-    )
-    .bind(id, input.title, input.detail, input.priority, input.dueDate, sortOrder, now, now)
+    .prepare(`INSERT INTO todos (id, title, detail, priority, done, due_date, sort_order, created_at, updated_at, done_at, user_id)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NULL, ?)`)
+    .bind(id, input.title, input.detail, input.priority, input.dueDate, sortOrder, now, now, userId)
     .run();
 
-  const created = await getTodo(db, id);
+  const created = await getTodo(db, userId, id);
   if (!created) throw new Error('待办创建后读取失败');
   return created;
 }
 
 export async function updateTodo(
-  db: D1Database,
+  db: D1Database, userId: string,
   id: string,
   patch: {
     title?: string;
@@ -342,7 +336,7 @@ export async function updateTodo(
     sortOrder?: number;
   },
 ): Promise<TodoDTO> {
-  const existing = await db.prepare('SELECT * FROM todos WHERE id = ?').bind(id).first<TodoRow>();
+  const existing = await db.prepare('SELECT * FROM todos WHERE id = ? AND user_id = ? ').bind(id, userId).first<TodoRow>();
   if (!existing) throw notFound('待办不存在');
 
   const done = patch.done === undefined ? existing.done : patch.done ? 1 : 0;
@@ -352,12 +346,10 @@ export async function updateTodo(
   }
 
   await db
-    .prepare(
-      `UPDATE todos
+    .prepare(`UPDATE todos
        SET title = ?, detail = ?, priority = ?, done = ?, due_date = ?, sort_order = ?,
            updated_at = ?, done_at = ?
-       WHERE id = ?`,
-    )
+       WHERE id = ? AND user_id = ? `)
     .bind(
       patch.title ?? existing.title,
       patch.detail ?? existing.detail,
@@ -368,68 +360,65 @@ export async function updateTodo(
       nowIso(),
       doneAt,
       id,
+      userId,
     )
     .run();
 
-  const updated = await getTodo(db, id);
+  const updated = await getTodo(db, userId, id);
   if (!updated) throw notFound('待办不存在');
   return updated;
 }
 
-export async function deleteTodo(db: D1Database, id: string): Promise<void> {
-  const res = await db.prepare('DELETE FROM todos WHERE id = ?').bind(id).run();
+export async function deleteTodo(db: D1Database, userId: string, id: string): Promise<void> {
+  const res = await db.prepare('DELETE FROM todos WHERE id = ? AND user_id = ? ').bind(id, userId).run();
   const changes = Number((res.meta as { changes?: number })?.changes ?? 0);
   if (changes === 0) throw notFound('待办不存在');
 }
 
 /* ── 习惯 ──────────────────────────────────────────────── */
 
-export async function listHabits(db: D1Database): Promise<HabitDTO[]> {
+export async function listHabits(db: D1Database, userId: string): Promise<HabitDTO[]> {
   const { results } = await db
-    .prepare('SELECT * FROM habits ORDER BY active DESC, sort_order ASC, created_at ASC')
+    .prepare('SELECT * FROM habits WHERE user_id = ? ORDER BY active DESC, sort_order ASC, created_at ASC').bind(userId)
     .all<HabitRow>();
   return results.map(toHabit);
 }
 
-export async function getHabit(db: D1Database, id: string): Promise<HabitDTO | null> {
-  const row = await db.prepare('SELECT * FROM habits WHERE id = ?').bind(id).first<HabitRow>();
+export async function getHabit(db: D1Database, userId: string, id: string): Promise<HabitDTO | null> {
+  const row = await db.prepare('SELECT * FROM habits WHERE id = ? AND user_id = ? ').bind(id, userId).first<HabitRow>();
   return row ? toHabit(row) : null;
 }
 
 export async function createHabit(
-  db: D1Database,
+  db: D1Database, userId: string,
   input: { name: string; icon: string; color: string },
 ): Promise<HabitDTO> {
   const id = newId('habit_');
   const maxRow = await db
-    .prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM habits')
+    .prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM habits WHERE user_id = ? ').bind(userId)
     .first<{ m: number }>();
 
   await db
-    .prepare(
-      `INSERT INTO habits (id, name, icon, color, active, sort_order, created_at)
-       VALUES (?, ?, ?, ?, 1, ?, ?)`,
-    )
-    .bind(id, input.name, input.icon, input.color, Number(maxRow?.m ?? 0) + 1, nowIso())
+    .prepare(`INSERT INTO habits (id, name, icon, color, active, sort_order, created_at, user_id)
+       VALUES (?, ?, ?, ?, 1, ?, ?, ?)`)
+    .bind(id, input.name, input.icon, input.color, Number(maxRow?.m ?? 0) + 1, nowIso(), userId)
     .run();
 
-  const created = await getHabit(db, id);
+  const created = await getHabit(db, userId, id);
   if (!created) throw new Error('习惯创建后读取失败');
   return created;
 }
 
 export async function updateHabit(
-  db: D1Database,
+  db: D1Database, userId: string,
   id: string,
   patch: { name?: string; icon?: string; color?: string; active?: boolean; sortOrder?: number },
 ): Promise<HabitDTO> {
-  const existing = await db.prepare('SELECT * FROM habits WHERE id = ?').bind(id).first<HabitRow>();
+  const existing = await db.prepare('SELECT * FROM habits WHERE id = ? AND user_id = ? ').bind(id, userId).first<HabitRow>();
   if (!existing) throw notFound('习惯不存在');
 
   await db
-    .prepare(
-      'UPDATE habits SET name = ?, icon = ?, color = ?, active = ?, sort_order = ? WHERE id = ?',
-    )
+    .prepare('UPDATE habits SET name = ?, icon = ?, color = ?, active = ?, sort_order = ? WHERE id = ? AND user_id = ? ')
     .bind(
       patch.name ?? existing.name,
       patch.icon ?? existing.icon,
@@ -437,27 +426,28 @@ export async function updateHabit(
       patch.active === undefined ? existing.active : patch.active ? 1 : 0,
       patch.sortOrder ?? existing.sort_order,
       id,
+      userId,
     )
     .run();
 
-  const updated = await getHabit(db, id);
+  const updated = await getHabit(db, userId, id);
   if (!updated) throw notFound('习惯不存在');
   return updated;
 }
 
 /** 删除习惯时会连带删掉它的打卡记录（外键 ON DELETE CASCADE） */
-export async function deleteHabit(db: D1Database, id: string): Promise<void> {
-  const res = await db.prepare('DELETE FROM habits WHERE id = ?').bind(id).run();
+export async function deleteHabit(db: D1Database, userId: string, id: string): Promise<void> {
+  const res = await db.prepare('DELETE FROM habits WHERE id = ? AND user_id = ? ').bind(id, userId).run();
   const changes = Number((res.meta as { changes?: number })?.changes ?? 0);
   if (changes === 0) throw notFound('习惯不存在');
 }
 
 export async function listHabitLogs(
-  db: D1Database,
+  db: D1Database, userId: string,
   opts: { from?: string; to?: string } = {},
 ): Promise<HabitLogDTO[]> {
-  const where: string[] = [];
-  const params: unknown[] = [];
+  const where: string[] = ['habit_id IN (SELECT id FROM habits WHERE user_id = ?)'];
+  const params: unknown[] = [userId];
   if (opts.from) {
     where.push('day >= ?');
     params.push(opts.from);
@@ -480,12 +470,12 @@ export async function listHabitLogs(
 
 /** 打卡 / 取消打卡。checked 为 undefined 时表示「切换」 */
 export async function setHabitLog(
-  db: D1Database,
+  db: D1Database, userId: string,
   habitId: string,
   day: string,
   checked?: boolean,
 ): Promise<{ habitId: string; day: string; checked: boolean }> {
-  const habit = await getHabit(db, habitId);
+  const habit = await getHabit(db, userId, habitId);
   if (!habit) throw notFound('习惯不存在');
 
   const existing = await db
@@ -536,76 +526,73 @@ export function computeStreak(days: Set<string>, today: string): number {
 
 /* ── 文档 ──────────────────────────────────────────────── */
 
-export async function listDocuments(db: D1Database): Promise<DocumentDTO[]> {
+export async function listDocuments(db: D1Database, userId: string): Promise<DocumentDTO[]> {
   const { results } = await db
-    .prepare('SELECT * FROM documents ORDER BY created_at DESC')
+    .prepare('SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC').bind(userId)
     .all<DocumentRow>();
   return results.map(toDocument);
 }
 
-export async function getDocument(db: D1Database, id: string): Promise<DocumentDTO | null> {
-  const row = await db.prepare('SELECT * FROM documents WHERE id = ?').bind(id).first<DocumentRow>();
+export async function getDocument(db: D1Database, userId: string, id: string): Promise<DocumentDTO | null> {
+  const row = await db.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? ').bind(id, userId).first<DocumentRow>();
   return row ? toDocument(row) : null;
 }
 
-export async function getDocumentRow(db: D1Database, id: string): Promise<DocumentRow | null> {
-  return (await db.prepare('SELECT * FROM documents WHERE id = ?').bind(id).first<DocumentRow>()) ?? null;
+export async function getDocumentRow(db: D1Database, userId: string, id: string): Promise<DocumentRow | null> {
+  return (await db.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? ').bind(id, userId).first<DocumentRow>()) ?? null;
 }
 
 export async function createDocument(
-  db: D1Database,
+  db: D1Database, userId: string,
   input: { name: string; sizeBytes: number; contentType: string; r2Key: string },
 ): Promise<DocumentDTO> {
   const id = newId('doc_');
   await db
-    .prepare(
-      `INSERT INTO documents (id, name, size_bytes, content_type, r2_key, created_at, last_page, total_pages, opened_at)
-       VALUES (?, ?, ?, ?, ?, ?, 1, NULL, NULL)`,
-    )
-    .bind(id, input.name, input.sizeBytes, input.contentType, input.r2Key, nowIso())
+    .prepare(`INSERT INTO documents (id, name, size_bytes, content_type, r2_key, created_at, last_page, total_pages, opened_at, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, 1, NULL, NULL, ?)`)
+    .bind(id, input.name, input.sizeBytes, input.contentType, input.r2Key, nowIso(), userId)
     .run();
-  const created = await getDocument(db, id);
+  const created = await getDocument(db, userId, id);
   if (!created) throw new Error('文档创建后读取失败');
   return created;
 }
 
 export async function updateDocument(
-  db: D1Database,
+  db: D1Database, userId: string,
   id: string,
   patch: { name?: string; lastPage?: number; totalPages?: number | null; opened?: boolean },
 ): Promise<DocumentDTO> {
-  const existing = await db.prepare('SELECT * FROM documents WHERE id = ?').bind(id).first<DocumentRow>();
+  const existing = await db.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ? ').bind(id, userId).first<DocumentRow>();
   if (!existing) throw notFound('文档不存在');
 
   await db
-    .prepare(
-      `UPDATE documents SET name = ?, last_page = ?, total_pages = ?, opened_at = ? WHERE id = ?`,
-    )
+    .prepare(`UPDATE documents SET name = ?, last_page = ?, total_pages = ?, opened_at = ? WHERE id = ? AND user_id = ? `)
     .bind(
       patch.name ?? existing.name,
       patch.lastPage ?? existing.last_page,
       patch.totalPages === undefined ? existing.total_pages : patch.totalPages,
       patch.opened ? nowIso() : existing.opened_at,
       id,
+      userId,
     )
     .run();
 
-  const updated = await getDocument(db, id);
+  const updated = await getDocument(db, userId, id);
   if (!updated) throw notFound('文档不存在');
   return updated;
 }
 
-export async function deleteDocument(db: D1Database, id: string): Promise<string> {
-  const row = await db.prepare('SELECT r2_key FROM documents WHERE id = ?').bind(id).first<{ r2_key: string }>();
+export async function deleteDocument(db: D1Database, userId: string, id: string): Promise<string> {
+  const row = await db.prepare('SELECT r2_key FROM documents WHERE id = ? AND user_id = ? ').bind(id, userId).first<{ r2_key: string }>();
   if (!row) throw notFound('文档不存在');
-  await db.prepare('DELETE FROM documents WHERE id = ?').bind(id).run();
+  await db.prepare('DELETE FROM documents WHERE id = ? AND user_id = ? ').bind(id, userId).run();
   return row.r2_key;
 }
 
 /** 已用容量（字节） */
-export async function storageUsed(db: D1Database): Promise<number> {
+export async function storageUsed(db: D1Database, userId: string): Promise<number> {
   const row = await db
-    .prepare('SELECT COALESCE(SUM(size_bytes), 0) AS total FROM documents')
+    .prepare('SELECT COALESCE(SUM(size_bytes), 0) AS total FROM documents WHERE user_id = ? ').bind(userId)
     .first<{ total: number }>();
   return Number(row?.total ?? 0);
 }
@@ -630,15 +617,15 @@ export function shiftDay(day: string, deltaDays: number): string {
  * today 必须是调用方所在时区的「本地日期」，否则深夜打卡会被算到第二天。
  */
 export async function habitsWithStreaks(
-  db: D1Database,
+  db: D1Database, userId: string,
   today: string,
   days: number,
 ): Promise<{ habits: EnrichedHabit[]; logs: HabitLogDTO[]; from: string }> {
   const from = shiftDay(today, -(days - 1));
 
   const [habits, logs] = await Promise.all([
-    listHabits(db),
-    listHabitLogs(db, { from, to: today }),
+    listHabits(db, userId),
+    listHabitLogs(db, userId, { from, to: today }),
   ]);
 
   const daysByHabit = new Map<string, Set<string>>();
@@ -667,10 +654,10 @@ export async function habitsWithStreaks(
 }
 
 /** 导出用：把所有笔记（含正文）全部读出，内部自动分批，避免一次拉爆内存 */
-export async function listAllNotes(db: D1Database, pageSize = 500): Promise<NoteDTO[]> {
+export async function listAllNotes(db: D1Database, userId: string, pageSize = 500): Promise<NoteDTO[]> {
   const out: NoteDTO[] = [];
   for (let offset = 0; offset < 200_000; offset += pageSize) {
-    const batch = await listNotes(db, { limit: pageSize, offset });
+    const batch = await listNotes(db, userId, { limit: pageSize, offset });
     out.push(...batch);
     if (batch.length < pageSize) break;
   }

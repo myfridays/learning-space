@@ -73,8 +73,8 @@ export function registerDocuments(r: Router) {
   /** 列表 + 容量使用情况 */
   r.get('/api/documents', async ({ env }) => {
     const [documents, used] = await Promise.all([
-      listDocuments(env.DB),
-      storageUsed(env.DB),
+      listDocuments(env.DB, env.USER!.id),
+      storageUsed(env.DB, env.USER!.id),
     ]);
     const quota = quotaBytes(env);
     return ok({
@@ -111,7 +111,7 @@ export function registerDocuments(r: Router) {
 
     // ── 容量校验 ──
     const quota = quotaBytes(env);
-    const used = await storageUsed(env.DB);
+    const used = await storageUsed(env.DB, env.USER!.id);
     if (used + file.size > quota) {
       const usedMb = (used / 1024 / 1024).toFixed(1);
       const quotaMb = (quota / 1024 / 1024).toFixed(0);
@@ -127,12 +127,12 @@ export function registerDocuments(r: Router) {
     // ── 先写 R2，再写数据库 ──
     // 这个顺序很重要：万一数据库写失败，最多留下一个孤儿对象，
     // 而不会出现「数据库里有记录但文件不见了」这种更糟的情况。
-    const r2Key = newId('f_');
+    const r2Key = `users/${env.USER!.id}/${newId('f_')}`;
     const bytes = await file.arrayBuffer();
     await env.BUCKET.put(r2Key, bytes, { httpMetadata: { contentType } });
 
     try {
-      const doc = await createDocument(env.DB, {
+      const doc = await createDocument(env.DB, env.USER!.id, {
         name,
         sizeBytes: file.size,
         contentType,
@@ -148,7 +148,7 @@ export function registerDocuments(r: Router) {
 
   /** 读取文件本体，支持 Range（PDF 阅读器渐进加载要用） */
   r.get('/api/documents/:id/file', async ({ request, env, params }) => {
-    const row = await getDocumentRow(env.DB, params.id);
+    const row = await getDocumentRow(env.DB, env.USER!.id, params.id);
     if (!row) throw notFound('文档不存在');
 
     const range = parseRange(request.headers.get('Range'), row.size_bytes);
@@ -161,7 +161,7 @@ export function registerDocuments(r: Router) {
     const headers = new Headers();
     headers.set('content-type', row.content_type || 'application/octet-stream');
     headers.set('accept-ranges', 'bytes');
-    headers.set('cache-control', 'private, max-age=600');
+    headers.set('cache-control', 'private, no-store');
     headers.set('content-disposition', contentDisposition(row.name, true));
     headers.set('etag', `"${row.id}-${row.size_bytes}"`);
 
@@ -187,13 +187,13 @@ export function registerDocuments(r: Router) {
     }
     if ('opened' in body) patch.opened = Boolean(body.opened);
 
-    const document = await updateDocument(env.DB, params.id, patch);
+    const document = await updateDocument(env.DB, env.USER!.id, params.id, patch);
     return ok({ document });
   });
 
   /** 删除：先删数据库记录，再删 R2 对象 */
   r.delete('/api/documents/:id', async ({ env, params }) => {
-    const r2Key = await deleteDocument(env.DB, params.id);
+    const r2Key = await deleteDocument(env.DB, env.USER!.id, params.id);
     await env.BUCKET.delete(r2Key).catch(() => {});
     return ok({ deleted: params.id });
   });

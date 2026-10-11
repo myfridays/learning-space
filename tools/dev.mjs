@@ -166,7 +166,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  数据库    .local/db.sqlite`);
   console.log(`  文件存储  .local/r2/`);
   console.log(`  迁移      ${applied.join(', ')}`);
-  console.log(`  登录校验  ${vars.APP_PASSWORD ? '已开启（需要密码）' : '已关闭（APP_PASSWORD 未设置）'}`);
+  console.log(`  登录校验  始终开启（主账号首次登录需 APP_PASSWORD，签名需 AUTH_SECRET）`);
   console.log('  ─────────────────────────────────────────────');
   console.log('  按 Ctrl+C 停止');
   console.log('');
