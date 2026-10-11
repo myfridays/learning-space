@@ -139,7 +139,7 @@ function renderShell() {
               `<a class="nav__link" href="${item.hash}" data-nav="${item.hash}">${item.label}</a>`,
           ).join('')}
         </nav>
-        <div class="topbar__tools">
+        <div class="topbar__tools"><a href="/" title="返回公开博客">博客 ↗</a>
           <button class="icon-btn" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">
             <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>

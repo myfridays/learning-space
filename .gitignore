@@ -22,3 +22,6 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+
+# 由 Markdown 与 public/ 构建生成
+dist/

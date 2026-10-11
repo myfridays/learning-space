@@ -6,7 +6,7 @@ function check(name, value) { assert.ok(value, name); passed++; console.log(`✓
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }), errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  const url = process.env.BASE_URL || 'http://127.0.0.1:8787';
+  const url = new URL('/admin.html', process.env.BASE_URL || 'http://127.0.0.1:8787').href;
   await page.goto(url);
   const pet = page.locator('#space-pet'), character = page.locator('.space-pet__character'), image = page.locator('.space-pet__image'), toggle = page.locator('.space-pet-toggle');
   const waitState = async (pose, playback) => page.waitForFunction(({ pose, playback }) => {

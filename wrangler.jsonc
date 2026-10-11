@@ -16,12 +16,12 @@
 	//    却拿到 HTML，会直接拒绝执行 → 整页白屏，且极难排查。
 	//    改成 "none" 之后，缺文件就是干净的 404，问题一眼可见。
 	"assets": {
-		"directory": "./public",
+		"directory": "./dist",
 		"binding": "ASSETS",
 		"not_found_handling": "none",
-		// /api/* 明确交给 Worker，其余请求完全不进 Worker，
+		// API 与需补全当前域名的订阅文件交给 Worker，其余由构建后的静态资源处理。
 		// 不依赖 Sec-Fetch-Mode 请求头做启发式判断，行为更可预测
-		"run_worker_first": ["/api/*"]
+		"run_worker_first": ["/api/*", "/feed.xml", "/sitemap.xml", "/robots.txt"]
 	},
 	// D1 数据库。执行 `wrangler d1 create learning-space` 后，
 	// 把输出的 database_id 填到下面引号里。

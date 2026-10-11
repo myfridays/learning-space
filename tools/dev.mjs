@@ -24,7 +24,7 @@ import { createR2 } from './lib/r2.mjs';
 import { loadDevVars, loadWranglerVars } from './lib/env.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const publicDir = join(root, 'public');
+const publicDir = join(root, 'dist');
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '127.0.0.1';
 

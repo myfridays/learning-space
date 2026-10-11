@@ -1,3 +1,21 @@
+# 独立博客 + 私人学习工作台
+
+现在首页是公开博客，使用 `content/posts/*.md` 写作，原学习空间位于 `/admin.html`。完整流程见 [博客写作与发布指南](docs/blog-writing.md)。
+
+```sh
+npm ci
+npm run post -- my-first-post 我的第一篇文章
+npm run dev
+```
+
+编辑 `blog.config.json` 设置博客名称、作者和二级域名；修改 `content/pages/about.md` 设置介绍。新文章默认草稿，改为 `draft: false` 才会构建到网站。产物在 `dist/`，不要直接编辑或提交产物。
+
+推送后自动上线需要先在 Cloudflare Workers 中连接 GitHub 仓库；配置方法见写作指南。此次代码没有部署。
+
+---
+
+以下是原学习工作台的功能与运维说明（访问入口现为 `/admin.html`，静态部署目录现为 `dist/`）：
+
 # 📚 学习空间
 
 一个自己用的学习记录站点：**笔记 · 待办 · 习惯打卡 · 文档阅读**，跑在 Cloudflare 上，手机和电脑打开都是同一份数据。

@@ -123,6 +123,19 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // Public feed URLs use the current subdomain when blog.config.json has no URL yet.
+    if (['/feed.xml', '/sitemap.xml', '/robots.txt'].includes(url.pathname) && env.ASSETS) {
+      if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method Not Allowed', { status: 405 });
+      const response = await env.ASSETS.fetch(new Request(request.url, { method: 'GET' }));
+      if (!response.ok) return response;
+      const origin = url.origin.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      const body = (await response.text()).replaceAll('__BLOG_ORIGIN__', origin);
+      return new Response(request.method === 'HEAD' ? null : body, { headers: {
+        'content-type': url.pathname.endsWith('.xml') ? 'application/xml; charset=utf-8' : 'text/plain; charset=utf-8',
+        'cache-control': 'no-cache',
+      } });
+    }
+
     // 非 API 请求交给静态资源
     if (!url.pathname.startsWith('/api/')) {
       if (env.ASSETS) return env.ASSETS.fetch(request);

@@ -13,7 +13,7 @@
     "test:modules": "node tools/test-modules.mjs",
     "test:units": "node tools/test-units.mjs",
     "test:http": "node tools/test-http.mjs",
-    "test:all": "node tools/check-imports.mjs && node tools/test-modules.mjs && node tools/test-units.mjs && node tools/test-api.mjs",
+    "test:all": "node tools/check-imports.mjs && node tools/test-modules.mjs && node tools/test-units.mjs && node tools/test-api.mjs && node tools/test-blog.mjs",
     "db:local": "wrangler d1 execute learning-space --local --file=./migrations/0001_init.sql",
     "db:local:seed": "wrangler d1 execute learning-space --local --file=./migrations/0002_seed.sql",
     "db:remote": "wrangler d1 execute learning-space --remote --file=./migrations/0001_init.sql",
@@ -21,7 +21,12 @@
     "db:tables": "wrangler d1 execute learning-space --remote --command=\"SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name\"",
     "deploy": "wrangler deploy",
     "logs": "wrangler tail",
-    "backup": "wrangler d1 export learning-space --remote --output=./backup.sql"
+    "backup": "wrangler d1 export learning-space --remote --output=./backup.sql",
+    "build": "node tools/build-blog.mjs",
+    "predev": "npm run build",
+    "predeploy": "npm run build",
+    "test:blog": "node tools/test-blog.mjs",
+    "post": "node tools/new-post.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.20.0"

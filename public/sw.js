@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------
  * 策略（针对「数据必须是最新的」这个要求专门设计）：
  *   · /api/*  → 完全不拦截，永远走网络。绝不缓存任何接口响应。
- *   · 导航请求 → 网络优先，断网时回退到缓存的 index.html
+ *   · 导航请求 → 永远走网络，文章撤回后不从缓存回退
  *   · 静态资源 → 缓存优先 + 后台更新（stale-while-revalidate）
  *
  * ⚠️ v2 加了「内容类型校验」：
@@ -12,11 +12,12 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v10-pet-sounds';
+const CACHE_NAME = 'learning-space-v11-blog';
 
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+  '/admin.html',
+  '/blog.css',
+  '/js/blog.js',
   '/app.css',
   '/icon.svg',
   '/icon-maskable.svg',
@@ -147,15 +148,8 @@ self.addEventListener('fetch', (event) => {
   // ★ 接口一律不拦截，直接走网络，保证数据永远是最新的
   if (url.pathname.startsWith('/api/')) return;
 
-  // 页面导航：网络优先，离线时用缓存的壳
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() =>
-        caches.match('/index.html').then((r) => r ?? Response.error()),
-      ),
-    );
-    return;
-  }
+  // 公开文章与订阅不使用离线旧副本，撤回文章后不会继续从缓存公开。
+  if (request.mode === 'navigate' || ['/feed.xml', '/sitemap.xml', '/robots.txt', '/search.json'].includes(url.pathname)) return;
 
   // 静态资源：先给缓存的，同时后台更新
   event.respondWith(
