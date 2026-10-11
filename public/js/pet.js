@@ -34,7 +34,7 @@ export function initPet() {
   }
   function playSound(name) {
     stopSound();
-    if (pet.hidden || document.hidden) return;
+    if (readStored('pet-muted', 'false') === 'true' || pet.hidden || document.hidden) return;
     activeSound = sounds[name];
     // Call directly from the gesture; blocked/missing audio must not interrupt the pose.
     activeSound.play().catch(() => {});
@@ -132,5 +132,6 @@ export function initPet() {
     if (manifest) show();
   });
   motion.addEventListener('change', () => { if (manifest) show(); });
+  window.addEventListener('pet-sound-change', stopSound);
   sync(); boot();
 }

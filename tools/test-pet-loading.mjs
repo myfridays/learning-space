@@ -20,7 +20,7 @@ try {
   console.log('✓ Loading text disappears when the decoded character is ready');
   for (let i=0;i<2;i++) {
     const styles=await page.locator('.space-pet-toggle,.space-pet-sound,#blog-theme').evaluateAll(els=>els.map(el=>{const s=getComputedStyle(el);return [s.borderTopWidth,s.backgroundColor,s.boxShadow];}));
-    assert.equal(styles.length,3);
+    assert.equal(styles.length,2);
     for(const style of styles) assert.deepEqual(style,['0px','rgba(0, 0, 0, 0)','none']);
     assert.equal(await page.locator('.space-pet__image').evaluate(el=>getComputedStyle(el).filter),'none');
     await page.locator('#blog-theme').click();

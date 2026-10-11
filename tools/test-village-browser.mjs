@@ -30,6 +30,7 @@ try{
  await page.locator('[name=content]').fill('尚未保存的输入');
  await page.locator('#nav a[href="#/fitness"]').click();await page.locator('#new-entry').waitFor();
  await page.locator('#nav a[href="#/mindfulness"]').click();
+ await page.locator('.quote-list').waitFor();
  check('栏目切换保留未提交输入',await page.locator('[name=content]').inputValue()==='尚未保存的输入');
  await page.route('**/api/life/mindfulness',route=>route.request().method()==='POST'?route.fulfill({status:503,json:{error:'测试保存失败'}}):route.continue());
  await page.locator('#life-form [type=submit]').click();await page.locator('#life-form [role=alert]').filter({hasText:'测试保存失败'}).waitFor();
@@ -57,7 +58,7 @@ try{
  await page.locator('.building-settings').click();
  await page.locator('#show-pet').uncheck();check('设置可收起桌宠',await page.locator('#space-pet').isHidden());
  await page.locator('#show-pet').check();check('设置可恢复桌宠',await page.locator('#space-pet').isVisible());
- await page.locator('#pet-audio').uncheck();check('设置可静音',await page.locator('.space-pet-sound').getAttribute('aria-pressed')==='true');
+ await page.locator('#pet-audio').uncheck();check('设置可静音',await page.evaluate(()=>localStorage.getItem('pet-muted'))==='true');
  await page.locator('.legacy-links a[href="#/notes"]').click();await page.locator('#searchInput').waitFor();check('旧笔记页面可进入',true);
  await page.goto(base+'/');check('公开博客保持原入口',await page.locator('.blog-brand').textContent().then(t=>t.includes('defineFlora')));
  check('无脚本错误',errors.length===0);

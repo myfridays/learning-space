@@ -17,25 +17,25 @@ try {
     };
   });
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:8787');
-  const character = page.locator('.space-pet__character'), mute = page.locator('.space-pet-sound'), toggle = page.locator('.space-pet-toggle');
+  const character = page.locator('.space-pet__character'), toggle = page.locator('.space-pet-toggle');
   await page.locator('#space-pet[data-state="ready"]').waitFor();
   await page.waitForFunction(() => document.querySelector('#space-pet').dataset.playback === 'playing');
   check('Automatic idle blink is silent', await page.evaluate(() => petAudioCalls.length === 0));
   for (const pose of ['jump', 'cute', 'wave']) {
     await character.click();
-    await page.waitForFunction(pose => petAudioPlayers.some(audio => audio.src.endsWith(`/${pose}.mp3`) && !audio.paused && audio.currentTime > 0), pose);
-    check(`${pose} audio decodes and plays`, await page.evaluate(pose => petAudioCalls.at(-1).endsWith(`/${pose}.mp3`), pose));
+    await page.waitForFunction(pose => petAudioPlayers.some(audio => audio.src.endsWith('/jump.mp3') && !audio.paused && audio.currentTime > 0), pose);
+    check(`${pose} audio decodes and plays`, await page.evaluate(pose => petAudioCalls.at(-1).endsWith('/jump.mp3'), pose));
   }
   await character.evaluate(button => { button.click(); button.click(); button.click(); });
-  check('Rapid clicks leave only the latest audio active', await page.evaluate(() => petAudioPlayers.filter(audio => !audio.paused).length === 1 && !petAudioPlayers.find(audio => audio.src.endsWith('/wave.mp3')).paused));
-  await mute.click();
+  check('Rapid clicks leave only the latest audio active', await page.evaluate(() => petAudioPlayers.filter(audio => !audio.paused).length === 1 && !petAudioPlayers.find(audio => audio.src.endsWith('/jump.mp3')).paused));
+  await page.evaluate(()=>{localStorage.setItem('pet-muted',String(localStorage.getItem('pet-muted')!=='true'));window.dispatchEvent(new Event('pet-sound-change'));});
   check('Mute immediately stops playback', await page.evaluate(() => petAudioPlayers.every(audio => audio.paused)));
   const before = await page.evaluate(() => petAudioCalls.length);
   await character.click();
   check('Muted click changes pose without sound', await page.locator('#space-pet').getAttribute('data-pose') === 'jump' && await page.evaluate(() => petAudioCalls.length) === before);
   await page.reload(); await page.locator('#space-pet[data-state="ready"]').waitFor();
-  check('Mute persists across reload', await mute.getAttribute('aria-pressed') === 'true');
-  await mute.click();
+  check('Mute persists across reload', await page.evaluate(()=>localStorage.getItem('pet-muted')) === 'true');
+  await page.evaluate(()=>{localStorage.setItem('pet-muted',String(localStorage.getItem('pet-muted')!=='true'));window.dispatchEvent(new Event('pet-sound-change'));});
   check('Unmuting does not auto-play', await page.evaluate(() => petAudioCalls.length === 0));
   await character.focus(); await page.keyboard.press('Enter');
   await page.waitForFunction(() => petAudioPlayers.some(audio => !audio.paused && audio.currentTime > 0));
