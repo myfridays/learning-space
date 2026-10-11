@@ -12,7 +12,7 @@
  *   导致明明修好了部署，浏览器还是一直白屏。
  */
 
-const CACHE_NAME = 'learning-space-v11-blog';
+const CACHE_NAME = 'learning-space-v12-clear-controls';
 
 const STATIC_ASSETS = [
   '/admin.html',

@@ -8,7 +8,8 @@ export function initPet() {
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const pet = document.createElement('aside');
   pet.id = 'space-pet'; pet.className = 'space-pet'; pet.setAttribute('aria-label', '桌宠');
-  pet.innerHTML = '<button type="button" class="space-pet__character"><img class="space-pet__image" alt="蓝发小伙伴" draggable="false"></button>';
+  pet.dataset.state = 'loading';
+  pet.innerHTML = '<button type="button" class="space-pet__character"><img class="space-pet__image" alt="蓝发小伙伴" draggable="false"></button><span class="space-pet__status" role="status">加载中…</span>';
   const dock = document.createElement('div');
   dock.className = 'space-pet-dock';
   dock.innerHTML = `<button type="button" class="space-pet-toggle" aria-controls="space-pet">🐋</button>
@@ -17,6 +18,12 @@ export function initPet() {
   document.body.append(pet, dock);
   const toggle = dock.querySelector('.space-pet-toggle'), retry = dock.querySelector('.space-pet__retry');
   const character = pet.querySelector('button'), sprite = pet.querySelector('img');
+  const status = pet.querySelector('.space-pet__status');
+  function setState(state) {
+    pet.dataset.state = state;
+    pet.setAttribute('aria-busy', String(state === 'loading'));
+    status.textContent = state === 'error' ? '加载失败，请重试' : state === 'loading' ? '加载中…' : '';
+  }
   const soundToggle = dock.querySelector('.space-pet-sound');
   let muted = readStored('pet-muted', 'false') === 'true', activeSound;
   const sounds = Object.fromEntries(['jump', 'cute', 'wave'].map(name => {
@@ -75,14 +82,15 @@ export function initPet() {
   }
   async function show(animate = false) {
     const ticket = cancel(); sync();
-    pet.dataset.state = 'loading'; retry.hidden = true;
+    setState('loading'); retry.hidden = true;
     try {
       const action = manifest.actions[pose];
       const still = await preload(action.static);
       if (ticket !== version) return;
-      // Keep the previous decoded image visible until the new pose is ready.
+      // Decode before showing the new pose to avoid incomplete images.
       sprite.src = still.src;
-      pet.dataset.state = 'ready';
+      pet.dataset.hasImage = 'true';
+      setState('ready');
       if (!animate || !canAnimate()) { scheduleBlink(); return; }
       const frames = await Promise.all(action.frames.map(preload));
       if (ticket !== version || !canAnimate()) return;
@@ -103,11 +111,11 @@ export function initPet() {
       frameRequest = requestAnimationFrame(tick);
     } catch {
       if (ticket !== version) return;
-      pet.dataset.state = 'error'; pet.dataset.playback = 'static'; retry.hidden = false;
+      setState('error'); pet.dataset.playback = 'static'; retry.hidden = false;
     }
   }
   async function boot() {
-    retry.hidden = true; pet.dataset.state = 'loading';
+    retry.hidden = true; setState('loading');
     try {
       const response = await fetch(base + 'manifest.json');
       if (!response.ok) throw new Error('Pet assets unavailable');
@@ -117,7 +125,7 @@ export function initPet() {
       // Warm the next action without blocking the initial still or surfacing optional preload errors.
       const next = manifest.actions[nextPose()];
       Promise.all([next.static, ...next.frames].map(preload)).catch(() => {});
-    } catch { pet.dataset.state = 'error'; retry.hidden = false; }
+    } catch { setState('error'); retry.hidden = false; }
   }
   character.disabled = true;
   character.addEventListener('click', () => { pose = nextPose(); playSound(pose); show(true); });
