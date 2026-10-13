@@ -54,7 +54,10 @@ html[data-theme="dark"] .pixel-space .village-panel { --frame-highlight:var(--bo
 .fitness-form legend { font-size:16px; font-weight:600; margin-bottom:12px; }
 .fitness-form .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .fitness-form label { margin-bottom:12px; }
-.set-reps { display:grid; grid-template-columns:repeat(auto-fit,minmax(72px,1fr)); gap:10px; margin-bottom:4px; }
+.set-reps { display:grid; gap:8px; margin-bottom:12px; }
+.training-set { display:grid; grid-template-columns:52px repeat(2,minmax(0,1fr)); gap:12px; align-items:center; padding:8px 0; border-top:1px dashed var(--border); }
+.training-set__number { white-space:nowrap; font-size:13px; color:var(--text-2); }
+.fitness-form .training-set label { margin:0; gap:4px; }
 .set-reps input { width:100%; }
 .pixel-space .workout-day.village-panel { padding:8px 16px; margin-bottom:16px; }
 .workout-row { display:flex; align-items:flex-start; gap:8px; padding:10px 0; }
@@ -75,7 +78,7 @@ html[data-theme="dark"] .pixel-space .village-panel { --frame-highlight:var(--bo
 }
 @media(max-width:720px) {
  .fitness-form .form-grid>label:nth-child(-n+2) { grid-column:1 / -1; }
- .fitness-form .set-reps { grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+ .fitness-form .training-set { gap:8px; grid-template-columns:44px repeat(2,minmax(0,1fr)); }
  .pixel-space .fitness-form .set-reps input { padding:8px 6px; }
 }
 

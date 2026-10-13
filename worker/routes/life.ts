@@ -35,13 +35,17 @@ function clean(kind: string, body: Record<string,unknown>) {
   if(kind==='fitness') {
     const strength=details.category && details.category!=='cardio';
     if(strength) {
-      if(details.weight===null||!details.sets||Number(details.sets)>50)throw badRequest('请填写重量和组数（1–50）');
+      if(!details.sets||Number(details.sets)>50)throw badRequest('请填写组数（1–50）');
+      const weights=body.weights===undefined&&details.weight!==null?Array(Number(details.sets)).fill(details.weight):body.weights;
+      if(!Array.isArray(weights)||weights.length!==details.sets||weights.some(n=>typeof n!=='number'||!Number.isFinite(n)||n<0||n>2000))throw badRequest('请为每组填写有效重量（kg）');
+      details.weights=weights;
+      details.weight=weights.every(n=>n===weights[0])?weights[0]:null;
       if(!Array.isArray(body.reps)||body.reps.length!==details.sets||body.reps.some(n=>typeof n!=='number'||!Number.isInteger(n)||n<1||n>1000))throw badRequest('请为每组填写有效次数');
       details.reps=body.reps;
       details.duration=null;details.distance=null;details.speed=null;details.incline=null;
     } else if(details.category==='cardio') {
       if(!details.duration)throw badRequest('请填写有氧时间');
-      details.weight=null;details.sets=null;details.reps=[];
+      details.weight=null;details.weights=[];details.sets=null;details.reps=[];
     }
   }
   return {content,day,details:JSON.stringify(details)};
@@ -63,7 +67,10 @@ export function registerLife(r: Router) {
     if(body.restore===true){await env.DB.prepare('UPDATE life_entries SET deleted_at=NULL, updated_at=? WHERE user_id=? AND id=?').bind(nowIso(),env.USER!.id,params.id).run();}
     else {
       if(row.deleted_at)throw notFound();
-      const value=clean(kind,{...dto(row),...body});
+      const merged={...dto(row),...body};
+      // Older clients use one weight for the entire exercise.
+      if('weight' in body && !('weights' in body))delete merged.weights;
+      const value=clean(kind,merged);
       await env.DB.prepare('UPDATE life_entries SET content=?,day=?,details=?,updated_at=? WHERE user_id=? AND id=?').bind(value.content,value.day,value.details,nowIso(),env.USER!.id,params.id).run();
     }
     return ok({item:dto(await env.DB.prepare('SELECT * FROM life_entries WHERE user_id=? AND id=?').bind(env.USER!.id,params.id).first())});

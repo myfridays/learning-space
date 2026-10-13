@@ -61,6 +61,18 @@ try{
  check('重启及撤销保留结构化训练数据',persisted.category==='chest'&&persisted.reps.length===4&&persisted.note==='继续努力');
  const exportItem=(await call('GET','/api/data/export')).data.lifeEntries.find(i=>i.id===strength.id);
  check('导出保留逐组数据',exportItem.details.reps.length===4);
+ for(const category of ['chest','shoulders','back','legs']) {
+  const response=await call('POST','/api/life/fitness',{category,content:'逐组训练',day:'2026-10-13',sets:4,weights:[10,12.5,15,0],reps:[12,10,8,15]});
+  const item=response.data.item;
+  check(category+' 逐组重量和次数持久保存',response.status===201&&JSON.stringify(item.weights)==='[10,12.5,15,0]'&&item.reps.length===4);
+  check(category+' 编辑心得不丢逐组重量',(await call('PATCH','/api/life/fitness/'+item.id,{note:'渐进加重'})).data.item.weights[1]===12.5);
+  check(category+' 重量数量必须等于组数',(await call('PATCH','/api/life/fitness/'+item.id,{weights:[10]})).status===400);
+  check(category+' 空重量不得变成零',(await call('PATCH','/api/life/fitness/'+item.id,{weights:[10,null,15,0]})).status===400);
+  check(category+' 负重量拒绝',(await call('PATCH','/api/life/fitness/'+item.id,{weights:[10,-1,15,0]})).status===400);
+ }
+ const legacyDetails={category:'back',weight:20,sets:2,reps:[10,8],note:''};
+ db.native.prepare("INSERT INTO life_entries(id,kind,content,day,details,created_at,updated_at) VALUES ('legacy-weight','fitness','旧版记录','2026-10-13',?,'2026','2026')").run(JSON.stringify(legacyDetails));
+ check('旧记录编辑自动补齐逐组重量',JSON.stringify((await call('PATCH','/api/life/fitness/legacy-weight',{note:'保留原重量'})).data.item.weights)==='[20,20]');
  check('天气接口需要认证',(await call('GET','/api/weather?latitude=31&longitude=121',undefined,false)).status===401);
  check('城市查询校验',(await call('GET','/api/weather/cities?q=a')).status===400);
  check('坐标校验',(await call('GET','/api/weather?latitude=NaN&longitude=121')).status===400);

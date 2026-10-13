@@ -10,16 +10,17 @@ export async function fitnessView(el, app) {
     <form id="life-form" class="pixel-panel entry-form fitness-form" hidden></form>
     <div id="undo-list" aria-live="polite"></div><p id="life-error" class="inline-error" role="alert"></p><div id="life-list" class="fitness-timeline">加载中…</div><button class="btn load-more" id="load-more" hidden>加载更多</button></div>`;
   const root=el.firstElementChild,form=root.querySelector('form'),list=root.querySelector('#life-list'),error=root.querySelector('#life-error'),more=root.querySelector('#load-more');
-  let items=[],hasMore=false,busy=false,current='',repValues=[];
+  let items=[],hasMore=false,busy=false,current='',repValues=[],weightValues=[];
   const field=name=>form.elements.namedItem(name);
   const number=(name,label,{min=0,max=1000,step='any',required=false,value=''}={})=>`<label>${label}<input type="number" name="${name}" min="${min}" max="${max}" step="${step}" value="${esc(value)}" ${required?'required':'placeholder="选填"'}></label>`;
-  function snapshot() { return {...Object.fromEntries(new FormData(form)),reps:[...form.querySelectorAll('[data-rep]')].map(n=>n.value)}; }
+  function snapshot() { return {...Object.fromEntries(new FormData(form)),reps:[...form.querySelectorAll('[data-rep]')].map(n=>n.value),weights:[...form.querySelectorAll('[data-weight]')].map(n=>n.value)}; }
   function remember() { if(!form.hidden){drafts.set(current,snapshot());activeDraft=current;} }
   function renderReps() {
     form.querySelectorAll('[data-rep]').forEach((n,i)=>repValues[i]=n.value);
+    form.querySelectorAll('[data-weight]').forEach((n,i)=>weightValues[i]=n.value);
     const count=Number(field('sets')?.value),container=form.querySelector('#set-reps');
     if(!container)return;
-    container.innerHTML=Number.isInteger(count)&&count>0&&count<=50?Array.from({length:count},(_,i)=>`<label>第 ${i+1} 组<input data-rep type="number" name="rep-${i}" min="1" max="1000" step="1" required value="${esc(repValues[i]??'')}" aria-label="第 ${i+1} 组次数" placeholder="次数"></label>`).join(''):'';
+    container.innerHTML=Number.isInteger(count)&&count>0&&count<=50?Array.from({length:count},(_,i)=>`<div class="training-set"><span class="training-set__number">第${i+1}组</span><label>重量 / kg<input data-weight type="number" name="weight-${i}" min="0" max="2000" step="any" required value="${esc(weightValues[i]??'')}" aria-label="第 ${i+1} 组重量（kg）" placeholder="kg"></label><label>次数 / 个<input data-rep type="number" name="rep-${i}" min="1" max="1000" step="1" required value="${esc(repValues[i]??'')}" aria-label="第 ${i+1} 组次数（个）" placeholder="个"></label></div>`).join(''):'';
   }
   function open(category,data={}) {
     current=category;activeDraft=category;const cardio=category==='cardio',legacy=!category;
@@ -27,12 +28,14 @@ export async function fitnessView(el, app) {
       <div class="form-grid"><label>${cardio?'有氧类型':'动作'}<input name="content" maxlength="80" required placeholder="${cardio?'例如：跑步':'例如：卧推'}"></label><label>日期<input type="date" name="day" required value="${localToday()}"></label>
       ${cardio||legacy?`${number('duration','时间 / min',{min:0.01,max:1440,required:cardio})}${number('distance','长度 / km',{min:0.01})}`:''}
       ${cardio?`${number('speed','速度 / m/s',{max:100})}${number('incline','坡度 / %',{max:100})}`:''}
-      ${!cardio?`${!legacy?number('weight','重量 / kg',{max:2000,required:true}):''}${number('sets','组数',{min:1,max:legacy?1000:50,step:1,required:!legacy,value:legacy?'':4})}`:''}</div>
-      ${!cardio&&!legacy?'<div id="set-reps" class="set-reps" role="group" aria-label="每组次数"></div>':''}
+      ${!cardio?`${number('sets','组数',{min:1,max:legacy?1000:50,step:1,required:!legacy,value:''})}`:''}</div>
+      ${!cardio&&!legacy?'<div id="set-reps" class="set-reps" role="group" aria-label="每组重量和次数"></div>':''}
       <label>心得<textarea name="note" rows="2" maxlength="2000" placeholder="选填"></textarea></label>
       <div class="form-actions"><button class="btn btn--primary" type="submit">${data.id?'保存修改':'保存'}</button><button class="btn" type="button" id="cancel-edit">取消</button><span class="inline-error" role="alert"></span></div></fieldset>`;
     for(const [key,value] of Object.entries(data))if(field(key))field(key).value=value??'';
-    repValues=data.reps||[];renderReps();form.hidden=false;
+    repValues=[...(data.reps||[])];
+    weightValues=[...(data.weights||Array.from({length:Number(data.sets)||0},()=>data.weight??''))];
+    renderReps();form.hidden=false;
     root.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.category===category)));
   }
   function close() { form.hidden=true;drafts.delete(current);activeDraft='';root.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-pressed','false')); }
@@ -40,7 +43,7 @@ export async function fitnessView(el, app) {
     const metrics=item.category==='cardio'
       ? [item.duration!=null?`${item.duration}min`:'',item.speed!=null?`${item.speed}m/s`:'',item.incline!=null?`${item.incline}% 坡度`:'',item.distance!=null?`${item.distance}km`:'']
       : item.category
-        ? [`${item.weight}kg`,`${item.sets}组`,(item.reps||[]).join('  ')]
+        ? [`${item.sets}组`,...(item.reps||[]).map((rep,i)=>`${item.weights?.[i]??item.weight}kg × ${rep}个`)]
         : [item.duration?`${item.duration} 分钟`:'',item.distance?`${item.distance} 公里`:'',item.sets?`${item.sets} 组`:''];
     return `<article class="workout-row" data-id="${esc(item.id)}"><div class="entry-content"><div class="workout-line"><strong>${esc(categories[item.category]?categories[item.category]+'：':'')}${esc(item.content)}</strong>${metrics.filter(Boolean).map(m=>`<span>${esc(m)}</span>`).join('')}</div>${item.note?`<p class="workout-note">${esc(item.note)}</p>`:''}</div><details class="entry-menu"><summary aria-label="记录操作">⋯</summary><div><button type="button" data-edit="${esc(item.id)}">编辑</button><button type="button" data-delete="${esc(item.id)}">删除</button></div></details></article>`;
   }
@@ -58,7 +61,7 @@ export async function fitnessView(el, app) {
   root.addEventListener('click',async event=>{
     if(busy)return;
     const category=event.target.closest('[data-category]'),edit=event.target.closest('[data-edit]'),del=event.target.closest('[data-delete]');
-    if(category){remember();open(category.dataset.category,drafts.get(category.dataset.category));field('content').focus();}
+    if(category){remember();open(category.dataset.category,drafts.get(category.dataset.category));(field('sets')||field('content')).focus();}
     if(event.target.closest('#cancel-edit'))close();
     if(event.target.closest('#retry-life'))await load();
     if(edit){remember();const item=items.find(i=>i.id===edit.dataset.edit);open(item.category||'',item);remember();form.scrollIntoView({block:'nearest'});field('content').focus();}
@@ -74,8 +77,9 @@ export async function fitnessView(el, app) {
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(busy)return;
     const data=snapshot(),id=data.id;delete data.id;
-    for(const key of Object.keys(data))if(key.startsWith('rep-'))delete data[key];
+    for(const key of Object.keys(data))if(key.startsWith('rep-')||key.startsWith('weight-'))delete data[key];
     data.reps=data.reps.map(Number);
+    data.weights=data.weights.map(Number);
     busy=true;form.querySelector('fieldset').disabled=true;const feedback=form.querySelector('[role=alert]');feedback.textContent='';
     try {if(id)await api.life.update('fitness',id,data);else await api.life.create('fitness',data);close();app.invalidate();await load();}
     catch(err){feedback.textContent=err.message;}finally{busy=false;form.querySelector('fieldset').disabled=false;}
